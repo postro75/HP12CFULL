@@ -1,0 +1,5 @@
+.DS_Store
+.vercel
+__pycache__/
+*.pyc
+.project_meta.json

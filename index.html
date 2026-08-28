@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CASIO SL-300 · Kalkulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Michroma&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --silver-hi: #f5f7fa;
+      --silver-mid: #c5c9d0;
+      --silver-lo: #8a9098;
+      --gold-hi: #f6de9a;
+      --gold-mid: #d4a017;
+      --gold-lo: #8a6508;
+      --lcd: #9aff6e;
+      --case: #1a1c20;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: #050607;
+      color: #e8eaed;
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(1200px 700px at 70% 10%, rgba(212, 160, 23, .12), transparent 55%),
+        linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.72)),
+        url("assets/casio-hero.jpg") center/cover no-repeat fixed;
+    }
+
+    .stage {
+      width: min(100%, 420px);
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+    }
+
+    .calc {
+      width: 100%;
+      border-radius: 28px;
+      padding: 18px 16px 20px;
+      background:
+        linear-gradient(145deg, #3a3d44 0%, #1c1e23 40%, #141518 100%);
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.18) inset,
+        0 -8px 16px rgba(0,0,0,.35) inset,
+        0 30px 60px rgba(0,0,0,.55),
+        0 8px 16px rgba(0,0,0,.4);
+      position: relative;
+    }
+
+    .calc::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 22px;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    .face {
+      border-radius: 18px;
+      padding: 14px 12px 16px;
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px),
+        linear-gradient(180deg, #e4e7ec 0%, #c9ced6 12%, #b4b9c2 55%, #9aa1aa 100%);
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.7) inset,
+        0 -2px 6px rgba(0,0,0,.25) inset,
+        0 8px 14px rgba(0,0,0,.28);
+    }
+
+    .solar-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .solar {
+      height: 28px;
+      border-radius: 4px;
+      background:
+        repeating-linear-gradient(90deg, #1b3a78 0 14px, #163066 14px 16px),
+        linear-gradient(180deg, #2a5cb3, #12244e);
+      box-shadow: inset 0 1px 2px rgba(255,255,255,.25), inset 0 -2px 4px rgba(0,0,0,.45);
+      border: 1px solid #0d1a36;
+    }
+
+    .solar-label {
+      font-size: 8px;
+      letter-spacing: .14em;
+      color: #4a5160;
+      font-weight: 700;
+      padding-bottom: 4px;
+    }
+
+    .brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 2px 4px 10px;
+    }
+
+    .logo {
+      font-family: Michroma, sans-serif;
+      font-size: 13px;
+      letter-spacing: .22em;
+      color: #1d222b;
+      text-shadow: 0 1px 0 rgba(255,255,255,.45);
+    }
+
+    .model {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      color: #5a6270;
+    }
+
+    .lcd-bezel {
+      background: #121416;
+      border-radius: 8px;
+      padding: 10px 10px 8px;
+      margin-bottom: 14px;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.35),
+        inset 0 3px 8px rgba(0,0,0,.65);
+    }
+
+    .lcd {
+      height: 84px;
+      border-radius: 4px;
+      background:
+        radial-gradient(120% 80% at 50% 0%, rgba(90, 255, 110, .16), transparent 55%),
+        linear-gradient(180deg, #1a2c1a, #0c160c);
+      color: var(--lcd);
+      font-family: "Share Tech Mono", ui-monospace, monospace;
+      font-size: clamp(36px, 11vw, 52px);
+      letter-spacing: .06em;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 12px 6px;
+      text-shadow: 0 0 10px rgba(154, 255, 110, .45);
+      overflow: hidden;
+    }
+
+    .lcd.error {
+      color: #ff8b7a;
+      text-shadow: 0 0 10px rgba(255, 100, 80, .4);
+    }
+
+    .indicators {
+      height: 14px;
+      font-size: 11px;
+      letter-spacing: .18em;
+      opacity: .7;
+      display: flex;
+      gap: 10px;
+    }
+
+    .value {
+      text-align: right;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .pad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button.key {
+      appearance: none;
+      border: 0;
+      position: relative;
+      height: 62px;
+      border-radius: 14px;
+      font-family: Inter, system-ui, sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1b1e24;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      isolation: isolate;
+      transition: transform .05s linear, filter .12s ease;
+    }
+
+    button.key:focus-visible {
+      outline: 2px solid #d4a017;
+      outline-offset: 2px;
+    }
+
+    .silver {
+      background:
+        radial-gradient(120% 90% at 30% 16%, rgba(255,255,255,.95), transparent 42%),
+        radial-gradient(90% 80% at 70% 100%, rgba(0,0,0,.28), transparent 52%),
+        linear-gradient(180deg, #f3f5f8 0%, #c4c8d0 46%, #8e949d 100%);
+      box-shadow:
+        0 5px 0 #555b63,
+        0 8px 12px rgba(0,0,0,.38),
+        inset 0 1px 0 rgba(255,255,255,.9),
+        inset 0 -3px 5px rgba(0,0,0,.22);
+    }
+
+    .fn {
+      background:
+        radial-gradient(120% 90% at 30% 16%, rgba(255,255,255,.85), transparent 42%),
+        linear-gradient(180deg, #dfe3ea 0%, #b0b6bf 50%, #7e858e 100%);
+      color: #2a3038;
+      font-size: 16px;
+      letter-spacing: .04em;
+    }
+
+    .gold {
+      color: #2a1c04;
+      background:
+        radial-gradient(120% 90% at 30% 16%, rgba(255,244,200,.95), transparent 42%),
+        radial-gradient(90% 80% at 70% 100%, rgba(80,40,0,.3), transparent 52%),
+        linear-gradient(180deg, #f6de9a 0%, #d4a017 48%, #8f680c 100%);
+      box-shadow:
+        0 5px 0 #6b4c08,
+        0 8px 12px rgba(0,0,0,.38),
+        inset 0 1px 0 rgba(255,255,220,.85),
+        inset 0 -3px 5px rgba(80,40,0,.28);
+    }
+
+    button.key::after {
+      content: "";
+      position: absolute;
+      inset: 3px 4px auto 4px;
+      height: 38%;
+      border-radius: 10px 10px 40% 40%;
+      background: linear-gradient(180deg, rgba(255,255,255,.38), transparent);
+      pointer-events: none;
+    }
+
+    button.key:hover { filter: brightness(1.06); }
+    button.key:active,
+    button.key.is-down {
+      transform: translateY(4px);
+      box-shadow:
+        0 1px 0 #555b63,
+        inset 0 4px 8px rgba(0,0,0,.35);
+      filter: brightness(.96);
+    }
+    button.gold:active,
+    button.gold.is-down {
+      box-shadow:
+        0 1px 0 #6b4c08,
+        inset 0 4px 8px rgba(80,40,0,.4);
+    }
+
+    .icon svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: rgba(255,255,255,.62);
+      text-align: center;
+      text-shadow: 0 1px 2px rgba(0,0,0,.6);
+    }
+
+    @media (max-width: 420px) {
+      .lcd { height: 74px; }
+      button.key { height: 56px; font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="calc" role="application" aria-label="Kalkulator Casio">
+      <div class="face">
+        <div class="solar-row">
+          <div class="solar" aria-hidden="true"></div>
+          <div class="solar-label">SOLAR</div>
+        </div>
+        <div class="brand">
+          <div class="logo">CASIO</div>
+          <div class="model">SL-300</div>
+        </div>
+        <div class="lcd-bezel">
+          <div class="lcd" id="lcd">
+            <div class="indicators" id="indicators"></div>
+            <div class="value" id="display">0</div>
+          </div>
+        </div>
+        <div class="pad">
+          <button class="key fn" data-key="AC" aria-label="All clear">AC</button>
+          <button class="key fn" data-key="+/-" aria-label="Zmiana znaku">+/−</button>
+          <button class="key fn" data-key="%" aria-label="Procent">%</button>
+          <button class="key gold" data-key="÷" aria-label="Dzielenie">÷</button>
+
+          <button class="key silver" data-key="7">7</button>
+          <button class="key silver" data-key="8">8</button>
+          <button class="key silver" data-key="9">9</button>
+          <button class="key gold" data-key="×" aria-label="Mnożenie">×</button>
+
+          <button class="key silver" data-key="4">4</button>
+          <button class="key silver" data-key="5">5</button>
+          <button class="key silver" data-key="6">6</button>
+          <button class="key gold" data-key="−" aria-label="Odejmowanie">−</button>
+
+          <button class="key silver" data-key="1">1</button>
+          <button class="key silver" data-key="2">2</button>
+          <button class="key silver" data-key="3">3</button>
+          <button class="key gold" data-key="+" aria-label="Dodawanie">+</button>
+
+          <button class="key fn icon" data-key="mode" aria-label="Tryb podstawowy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <path d="M7 8h2M11 8h2M15 8h2M7 12h2M11 12h2M15 12h2M7 16h10"/>
+            </svg>
+          </button>
+          <button class="key silver" data-key="0">0</button>
+          <button class="key silver" data-key="," aria-label="Przecinek">,</button>
+          <button class="key gold" data-key="=" aria-label="Równa się">=</button>
+        </div>
+      </div>
+    </div>
+    <p class="hint">Przecinek dziesiętny · klawiatura działa · CASIO 3D silver</p>
+  </div>
+
+  <script>
+    const state = {
+      acc: null,
+      op: null,
+      entry: "0",
+      entering: true,
+      lastRhs: null,
+      lastOp: null,
+      error: false,
+    };
+
+    const displayEl = document.getElementById("display");
+    const lcdEl = document.getElementById("lcd");
+    const indicatorsEl = document.getElementById("indicators");
+
+    function parsePl(s) {
+      if (s === "Błąd") return NaN;
+      return Number(String(s).replace(/\s/g, "").replace(",", "."));
+    }
+
+    function digitCount(s) {
+      return (s.match(/\d/g) || []).length;
+    }
+
+    function formatRaw(n) {
+      if (!Number.isFinite(n)) return "Błąd";
+      const abs = Math.abs(n);
+      let s;
+      if (abs !== 0 && (abs >= 1e12 || abs < 1e-8)) {
+        s = n.toExponential(6);
+      } else {
+        s = String(Number(n.toPrecision(12)));
+      }
+      return s.replace(".", ",");
+    }
+
+    function formatPl(n) {
+      const raw = formatRaw(n);
+      if (raw === "Błąd") return raw;
+      const exp = raw.split(/e/i);
+      const [intPart, frac] = exp[0].split(",");
+      const sign = intPart.startsWith("-") ? "-" : "";
+      const digits = intPart.replace("-", "");
+      const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      let out = sign + grouped + (frac != null ? "," + frac : "");
+      if (exp[1]) out += "e" + exp[1];
+      return out;
+    }
+
+    function apply(a, op, b) {
+      switch (op) {
+        case "+": return a + b;
+        case "−": return a - b;
+        case "×": return a * b;
+        case "÷": return b === 0 ? NaN : a / b;
+        default: return b;
+      }
+    }
+
+    function errorNan() {
+      state.error = true;
+      state.entry = "Błąd";
+      state.entering = false;
+      state.op = null;
+    }
+
+    function allClear() {
+      state.acc = null;
+      state.op = null;
+      state.entry = "0";
+      state.entering = true;
+      state.lastRhs = null;
+      state.lastOp = null;
+      state.error = false;
+    }
+
+    function digit(d) {
+      if (!state.entering) {
+        state.entry = String(d);
+        state.entering = true;
+        return;
+      }
+      if (state.entry === "0" || state.entry === "-0") {
+        state.entry = (state.entry.startsWith("-") ? "-" : "") + String(d);
+        return;
+      }
+      if (digitCount(state.entry) >= 15) return;
+      state.entry += String(d);
+    }
+
+    function comma() {
+      if (!state.entering) {
+        state.entry = "0,";
+        state.entering = true;
+        return;
+      }
+      if (!state.entry.includes(",")) state.entry += ",";
+    }
+
+    function operator(k) {
+      const x = parsePl(state.entry);
+      if (state.op && state.entering) {
+        const result = apply(state.acc, state.op, x);
+        if (!Number.isFinite(result)) { errorNan(); return; }
+        state.acc = result;
+        state.entry = formatRaw(result);
+      } else {
+        state.acc = x;
+      }
+      state.op = k;
+      state.lastOp = k;
+      state.lastRhs = null;
+      state.entering = false;
+    }
+
+    function equals() {
+      const x = parsePl(state.entry);
+      let result;
+      if (state.op) {
+        state.lastRhs = x;
+        state.lastOp = state.op;
+        result = apply(state.acc, state.op, x);
+      } else if (state.lastOp && state.lastRhs != null) {
+        result = apply(x, state.lastOp, state.lastRhs);
+      } else {
+        result = x;
+      }
+      if (!Number.isFinite(result)) { errorNan(); return; }
+      state.acc = result;
+      state.entry = formatRaw(result);
+      state.op = null;
+      state.entering = false;
+    }
+
+    function sign() {
+      if (state.entry.startsWith("-")) state.entry = state.entry.slice(1);
+      else if (state.entry !== "0") state.entry = "-" + state.entry;
+    }
+
+    function percent() {
+      let x = parsePl(state.entry);
+      if ((state.op === "+" || state.op === "−") && state.acc != null) {
+        x = state.acc * (x / 100);
+      } else {
+        x = x / 100;
+      }
+      state.entry = formatRaw(x);
+      state.entering = false;
+    }
+
+    function mode() {
+      indicatorsEl.textContent = "BASIC";
+      setTimeout(() => render(), 700);
+    }
+
+    function render() {
+      const n = parsePl(state.entry);
+      displayEl.textContent = state.error ? "Błąd" : (state.entering ? state.entry : formatPl(n));
+      lcdEl.classList.toggle("error", state.error);
+      indicatorsEl.textContent = state.error ? "" : (state.op || "");
+    }
+
+    function clickSound() {
+      try {
+        const ctx = clickSound.ctx || (clickSound.ctx = new AudioContext());
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "square";
+        o.frequency.value = 190;
+        g.gain.value = 0.03;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+        o.stop(ctx.currentTime + 0.05);
+      } catch (_) {}
+    }
+
+    function press(key) {
+      if (state.error && key !== "AC") return;
+      switch (key) {
+        case "0": case "1": case "2": case "3": case "4":
+        case "5": case "6": case "7": case "8": case "9":
+          digit(key); break;
+        case ",": comma(); break;
+        case "+": case "−": case "×": case "÷": operator(key); break;
+        case "=": equals(); break;
+        case "AC": allClear(); break;
+        case "+/-": sign(); break;
+        case "%": percent(); break;
+        case "mode": mode(); break;
+      }
+      render();
+    }
+
+    document.querySelectorAll("button.key").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        clickSound();
+        press(btn.dataset.key);
+      });
+    });
+
+    const keymap = {
+      Escape: "AC",
+      Backspace: "AC",
+      Enter: "=",
+      "=": "=",
+      "+": "+",
+      "-": "−",
+      "*": "×",
+      "/": "÷",
+      "%": "%",
+      ",": ",",
+      ".": ",",
+    };
+
+    window.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      let key = keymap[e.key];
+      if (!key && /^[0-9]$/.test(e.key)) key = e.key;
+      if (!key) return;
+      e.preventDefault();
+      const btn = document.querySelector(`button.key[data-key="${CSS.escape(key)}"]`);
+      if (btn) {
+        btn.classList.add("is-down");
+        setTimeout(() => btn.classList.remove("is-down"), 80);
+      }
+      clickSound();
+      press(key);
+    });
+
+    window.CasioCalc = { press, getState: () => ({ ...state }), render };
+    render();
+  </script>
+</body>
+</html>
