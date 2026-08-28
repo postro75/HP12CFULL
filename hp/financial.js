@@ -847,21 +847,100 @@ class FinancialEngine {
     }
 
     /**
-     * Calculate Net Present Value (future implementation)
-     * @param {Array} cashFlows - Array of cash flows
-     * @param {number} rate - Discount rate
-     * @returns {number} NPV
+     * NPV of memory.cashFlows at memory.financial.i (% per period).
+     * CF0 at period 0; each later CFj is repeated Nj times.
      */
-    calculateNPV(cashFlows, rate) {
-        throw new Error('NPV not yet implemented');
+    calculateNPV(memory) {
+        const flows = memory.cashFlows || [];
+        if (!flows.length) {
+            throw new Error('Error 3');
+        }
+        const i = memory.getFinancialRegister('i') / 100;
+        const npv = this._sumPV(flows, i);
+        if (!isFinite(npv)) {
+            throw new Error('Error 3');
+        }
+        return npv;
+    }
+
+    _sumPV(flows, i) {
+        const v = 1 + i;
+        if (v <= 0) return NaN;
+        let total = flows[0].amount;
+        let period = 0;
+        for (let j = 1; j < flows.length; j++) {
+            const reps = Math.max(1, flows[j].nj || 1);
+            for (let k = 0; k < reps; k++) {
+                period += 1;
+                total += flows[j].amount / Math.pow(v, period);
+            }
+        }
+        return total;
     }
 
     /**
-     * Calculate Internal Rate of Return (future implementation)
-     * @param {Array} cashFlows - Array of cash flows
-     * @returns {number} IRR
+     * IRR as percent per period (same units as i).
      */
-    calculateIRR(cashFlows) {
-        throw new Error('IRR not yet implemented');
+    calculateIRR(memory) {
+        const flows = memory.cashFlows || [];
+        if (flows.length < 2) {
+            throw new Error('Error 3');
+        }
+        let hasPos = false;
+        let hasNeg = false;
+        for (const cf of flows) {
+            if (cf.amount > 0) hasPos = true;
+            if (cf.amount < 0) hasNeg = true;
+        }
+        if (!(hasPos && hasNeg)) {
+            throw new Error('Error 3');
+        }
+
+        const lo0 = -0.99;
+        const hi0 = 10;
+        let fLo = this._sumPV(flows, lo0);
+        if (!isFinite(fLo)) {
+            throw new Error('Error 3');
+        }
+        let lo = lo0;
+        let hi = hi0;
+        let bracketed = false;
+        let a = lo0;
+        let fa = fLo;
+        for (let k = 1; k <= 50; k++) {
+            const t = lo0 + (hi0 - lo0) * k / 50;
+            const ft = this._sumPV(flows, t);
+            if (!isFinite(ft)) continue;
+            if (fa * ft < 0) {
+                lo = a;
+                hi = t;
+                fLo = fa;
+                bracketed = true;
+                break;
+            }
+            a = t;
+            fa = ft;
+        }
+        if (!bracketed) {
+            throw new Error('Error 3');
+        }
+
+        for (let k = 0; k < this.MAX_ITERATIONS; k++) {
+            const mid = 0.5 * (lo + hi);
+            const fm = this._sumPV(flows, mid);
+            if (!isFinite(fm)) {
+                throw new Error('Error 3');
+            }
+            if (Math.abs(fm) < this.TOLERANCE || (hi - lo) < this.TOLERANCE) {
+                return mid * 100;
+            }
+            if (fm * fLo < 0) {
+                hi = mid;
+            } else {
+                lo = mid;
+                fLo = fm;
+            }
+        }
+        return 0.5 * (lo + hi) * 100;
     }
 }

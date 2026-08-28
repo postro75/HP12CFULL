@@ -898,6 +898,9 @@
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       let key = keymap[e.key];
       if (!key && /^[0-9]$/.test(e.key)) key = e.key;
+      if (!key && document.documentElement.getAttribute("data-model") === "hp12c") {
+        key = ({ n: "n", i: "i", f: "f", g: "g", p: "pv", m: "pmt", v: "fv", s: "sto", r: "rcl" })[e.key];
+      }
       if (!key) return;
       e.preventDefault();
       const btn = document.querySelector(`button.key[data-key="${CSS.escape(key)}"]`);

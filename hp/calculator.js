@@ -23,6 +23,9 @@ class Calculator {
         
         // Pending operation state (for STO, RCL requiring register number)
         this.pendingOperation = null;
+
+        // HP-12C: TVM keys store X after a new entry/result, otherwise solve.
+        this.tvmStoreNext = false;
         
         // References to DOM elements
         this.displayElement = null;
@@ -107,6 +110,10 @@ class Calculator {
      * @param {string} primary - Primary label
      */
     handlePrimaryFunction(key, primary) {
+        if (this.consumePendingMemory(key)) {
+            return;
+        }
+
         // Number keys (digit-0 through digit-9)
         if (key.startsWith('digit-')) {
             const digit = key.replace('digit-', '');
@@ -236,12 +243,24 @@ class Calculator {
      */
     handleGoldFunction(key) {
         console.log('Gold function:', key);
+
+        if (key.startsWith('digit-')) {
+            const n = parseInt(key.replace('digit-', ''), 10);
+            this.display.setFormat('fixed', n);
+            this.updateDisplay();
+            return;
+        }
         
         switch(key) {
-            case 'n':  // f n = AMORT (amortization)
+            case 'n':  // f n = AMORT
                 this.handleAmortization();
                 break;
-                
+            case 'pv':  // f PV = NPV
+                this.handleNPV();
+                break;
+            case 'fv':  // f FV = IRR
+                this.handleIRR();
+                break;
             default:
                 console.log('Unimplemented gold function:', key);
         }
@@ -298,6 +317,18 @@ class Calculator {
             case 'digit-8':  // g 8 = END mode
                 this.setEndMode();
                 break;
+
+            case 'pv':  // g PV = CF0
+                this.handleCF0();
+                break;
+
+            case 'pmt':  // g PMT = CFj
+                this.handleCFj();
+                break;
+
+            case 'fv':  // g FV = Nj
+                this.handleNj();
+                break;
                 
             default:
                 console.log('Unimplemented blue function:', key);
@@ -334,6 +365,7 @@ class Calculator {
             this.currentInput += digit;
         }
         this.stack.x = parseFloat(this.currentInput) || 0;
+        this.tvmStoreNext = true;
     }
 
     /**
@@ -350,6 +382,7 @@ class Calculator {
             this.hasDecimal = true;
         }
         this.stack.x = parseFloat(this.currentInput) || 0;
+        this.tvmStoreNext = true;
     }
 
     /**
@@ -360,6 +393,7 @@ class Calculator {
         this.currentInput = '';
         this.isNewNumber = true;
         this.hasDecimal = false;
+        this.tvmStoreNext = true;
         this.display.show(this.stack.x, true);
     }
 
@@ -371,6 +405,7 @@ class Calculator {
         this.currentInput = '';
         this.isNewNumber = true;
         this.hasDecimal = false;
+        this.tvmStoreNext = true;
     }
 
     /**
@@ -438,6 +473,7 @@ class Calculator {
         this.isNewNumber = true;
         this.currentInput = "";
         this.hasDecimal = false;
+        this.tvmStoreNext = true;
     }
 
     /**
@@ -456,6 +492,7 @@ class Calculator {
             // Change sign of stack X
             this.stack.x = -this.stack.x;
         }
+        this.tvmStoreNext = true;
     }
 
     /**
@@ -464,6 +501,7 @@ class Calculator {
     recallLastX() {
         this.stack.recallLastX();
         this.isNewNumber = true;
+        this.tvmStoreNext = true;
     }
 
     // ============================================
@@ -471,8 +509,7 @@ class Calculator {
     // ============================================
 
     /**
-     * Percentage: X is what percent of Y
-     * Formula: (X / Y) × 100
+     * Percentage: X% of Y (HP-12C %). Y stays.
      */
     percent() {
         this.finishNumberEntry();
@@ -487,8 +524,7 @@ class Calculator {
     }
 
     /**
-     * Percent Total: X% of Y
-     * Formula: (X / 100) × Y
+     * Percent Total: X is what percent of Y (HP-12C %T)
      */
     percentTotal() {
         this.finishNumberEntry();
@@ -665,7 +701,31 @@ class Calculator {
         const value = this.memory.recall(registerNum);
         this.stack.push(value);
         this.isNewNumber = true;
+        this.tvmStoreNext = true;
         console.log(`Recalled ${value} from R${registerNum}`);
+    }
+
+    consumePendingMemory(key) {
+        if (this.pendingOperation !== 'sto' && this.pendingOperation !== 'rcl') {
+            return false;
+        }
+        const finMap = { n: 0, i: 1, pv: 2, pmt: 3, fv: 4 };
+        if (!(key in finMap)) {
+            return false;
+        }
+        const name = key;
+        this.finishNumberEntry();
+        if (this.pendingOperation === 'sto') {
+            this.memory.setFinancialRegister(name, this.stack.x);
+            this.tvmStoreNext = false;
+        } else {
+            const value = this.memory.getFinancialRegister(name);
+            this.stack.push(value);
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        }
+        this.pendingOperation = null;
+        return true;
     }
 
     // ============================================
@@ -680,17 +740,14 @@ class Calculator {
      */
     handleTVMKey(register) {
         const registerName = register.toUpperCase();
-        
-        // Check if there's a new number to store
-        if (!this.isNewNumber || this.currentInput !== '') {
-            // Store mode: store current X register value
+
+        if (this.tvmStoreNext) {
             const value = this.stack.x;
             this.memory.setFinancialRegister(register, value);
             this.isNewNumber = true;
             this.currentInput = '';
-            console.log(`Stored ${value} in ${registerName} register (R${this.getFinancialRegisterNumber(register)})`);
-            
-            // Flash display to indicate storage
+            this.tvmStoreNext = false;
+            console.log(`Stored ${value} in ${registerName}`);
             this.updateDisplay();
         } else {
             // Solve mode: calculate the register value
@@ -728,6 +785,7 @@ class Calculator {
                 this.stack.x = result;
                 this.isNewNumber = true;
                 this.currentInput = '';
+                this.tvmStoreNext = false;
                 
                 // Show iteration count for iterative solvers
                 if (register === 'n' || register === 'i') {
@@ -773,6 +831,63 @@ class Calculator {
         console.log('Payment mode: END (ordinary annuity)');
     }
     
+    handleCF0() {
+        this.finishNumberEntry();
+        this.memory.setCF0(this.stack.x);
+        this.isNewNumber = true;
+        this.tvmStoreNext = false;
+        this.updateDisplay();
+    }
+
+    handleCFj() {
+        this.finishNumberEntry();
+        this.memory.appendCFj(this.stack.x);
+        this.isNewNumber = true;
+        this.tvmStoreNext = false;
+        this.updateDisplay();
+    }
+
+    handleNj() {
+        this.finishNumberEntry();
+        try {
+            this.memory.setLastNj(this.stack.x);
+            this.isNewNumber = true;
+            this.tvmStoreNext = false;
+            this.updateDisplay();
+        } catch (error) {
+            this.display.showError(error.message);
+        }
+    }
+
+    handleNPV() {
+        this.finishNumberEntry();
+        try {
+            const result = this.financial.calculateNPV(this.memory);
+            this.stack.saveLastX();
+            this.stack.x = result;
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+            this.updateDisplay();
+        } catch (error) {
+            this.display.showError(error.message);
+        }
+    }
+
+    handleIRR() {
+        this.finishNumberEntry();
+        try {
+            const result = this.financial.calculateIRR(this.memory);
+            this.stack.saveLastX();
+            this.stack.x = result;
+            this.memory.setFinancialRegister('i', result);
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+            this.updateDisplay();
+        } catch (error) {
+            this.display.showError(error.message);
+        }
+    }
+
     /**
      * Handle amortization calculation
      * HP-12C workflow:
@@ -841,6 +956,8 @@ class Calculator {
         this.hasDecimal = false;
         this.prefixF = false;
         this.prefixG = false;
+        this.pendingOperation = null;
+        this.tvmStoreNext = false;
         this.display.setFormat('fixed', 2);
         this.display.setIndicator('f', false);
         this.display.setIndicator('g', false);

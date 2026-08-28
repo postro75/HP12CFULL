@@ -5,11 +5,11 @@
 
 class MemoryManager {
     constructor() {
-        // 20 storage registers (R0-R19)
+        // 20 storage registers (R0-R19) — independent of TVM on a real 12C
         this.registers = Array(20).fill(0);
-        
-        // Financial registers are mapped to regular registers
-        // R0 = n, R1 = i, R2 = PV, R3 = PMT, R4 = FV
+        this.financial = { n: 0, i: 0, pv: 0, pmt: 0, fv: 0 };
+        // CF0 + CFj groups, each with repetition Nj (HP-12C cash-flow list)
+        this.cashFlows = [];
     }
 
     /**
@@ -112,9 +112,8 @@ class MemoryManager {
      * Clear financial registers (R0-R4)
      */
     clearFinancial() {
-        for (let i = 0; i < 5; i++) {
-            this.registers[i] = 0;
-        }
+        this.financial = { n: 0, i: 0, pv: 0, pmt: 0, fv: 0 };
+        this.cashFlows = [];
     }
 
     /**
@@ -130,13 +129,7 @@ class MemoryManager {
      * @returns {object} Financial register values
      */
     getFinancialRegisters() {
-        return {
-            n: this.registers[0],
-            i: this.registers[1],
-            pv: this.registers[2],
-            pmt: this.registers[3],
-            fv: this.registers[4]
-        };
+        return { ...this.financial };
     }
 
     /**
@@ -145,17 +138,9 @@ class MemoryManager {
      * @param {number} value - Value to set
      */
     setFinancialRegister(name, value) {
-        const mapping = {
-            'n': 0,
-            'i': 1,
-            'pv': 2,
-            'pmt': 3,
-            'fv': 4
-        };
-        
-        const registerNum = mapping[name.toLowerCase()];
-        if (registerNum !== undefined) {
-            this.registers[registerNum] = value;
+        const key = String(name).toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(this.financial, key)) {
+            this.financial[key] = value;
             return true;
         }
         return false;
@@ -167,19 +152,32 @@ class MemoryManager {
      * @returns {number} Register value
      */
     getFinancialRegister(name) {
-        const mapping = {
-            'n': 0,
-            'i': 1,
-            'pv': 2,
-            'pmt': 3,
-            'fv': 4
-        };
-        
-        const registerNum = mapping[name.toLowerCase()];
-        if (registerNum !== undefined) {
-            return this.registers[registerNum];
+        const key = String(name).toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(this.financial, key)) {
+            return this.financial[key];
         }
         return 0;
+    }
+
+    setCF0(amount) {
+        this.cashFlows = [{ amount: Number(amount) || 0, nj: 1 }];
+        this.financial.n = 0;
+    }
+
+    appendCFj(amount) {
+        if (this.cashFlows.length === 0) {
+            this.setCF0(0);
+        }
+        this.cashFlows.push({ amount: Number(amount) || 0, nj: 1 });
+        this.financial.n = this.cashFlows.length - 1;
+    }
+
+    setLastNj(n) {
+        if (this.cashFlows.length < 2) {
+            throw new Error('Error 6');
+        }
+        const nj = Math.max(1, Math.floor(Math.abs(Number(n) || 1)));
+        this.cashFlows[this.cashFlows.length - 1].nj = nj;
     }
 
     /**
@@ -188,7 +186,9 @@ class MemoryManager {
      */
     getState() {
         return {
-            registers: [...this.registers]
+            registers: [...this.registers],
+            financial: { ...this.financial },
+            cashFlows: this.cashFlows.map((cf) => ({ ...cf })),
         };
     }
 
@@ -212,6 +212,7 @@ class MemoryManager {
      */
     reset() {
         this.registers.fill(0);
+        this.clearFinancial();
     }
 
     /**

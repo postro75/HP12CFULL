@@ -1,0 +1,27 @@
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Engine, UX, Casio
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory "$GITHUB_WORKSPACE" &
+          sleep 1
+          python3 tests/hp12c_engine.py
+          python3 tests/hp12c_ux.py
+          python3 tests/e2e_liczy.py

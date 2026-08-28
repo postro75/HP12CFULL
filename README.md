@@ -15,10 +15,12 @@ python3 -m http.server 8765
 E2E:
 
 ```bash
-python3 tests/e2e_liczy.py
+python3 tests/hp12c_engine.py   # HP-12C RPN/TVM silnik
+python3 tests/hp12c_ux.py       # hotspoty na zdjęciu HP12C.png
+python3 tests/e2e_liczy.py      # Casio algebra L→P
 ```
 
-Klawiatura laptopa działa (`Enter`, `Escape`, `*`, `/`, `.`).
+Klawiatura laptopa działa (`Enter`, `Escape`, `*`, `/`, `.`). Na modelu HP-12C dodatkowo `n` `i` `f` `g` `p` (PV) `m` (PMT) `v` (FV) `s` (STO) `r` (RCL).
 
 ## Aplikacja na Maca
 

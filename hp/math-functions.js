@@ -21,28 +21,24 @@ class MathEngine {
     }
 
     /**
-     * Calculate percentage: X is what percent of Y
-     * Formula: (X / Y) × 100
-     * @param {number} x - Amount
-     * @param {number} y - Base
-     * @returns {number} Percentage
+     * HP-12C % : X percent of Y.
+     * Formula: Y × (X / 100). Y stays in Y.
+     * 200 ENTER 15 % → 30
      */
     percent(x, y) {
-        if (y === 0) {
-            throw new Error('Error 0'); // Division by zero
-        }
-        return (x / y) * 100;
+        return y * (x / 100);
     }
 
     /**
-     * Calculate percentage of total: X% of Y
-     * Formula: (X / 100) × Y
-     * @param {number} x - Percentage
-     * @param {number} y - Base
-     * @returns {number} Amount
+     * HP-12C %T : X is what percent of Y.
+     * Formula: (X / Y) × 100.
+     * 200 ENTER 50 %T → 25
      */
     percentTotal(x, y) {
-        return (x / 100) * y;
+        if (y === 0) {
+            throw new Error('Error 0');
+        }
+        return (x / y) * 100;
     }
 
     /**

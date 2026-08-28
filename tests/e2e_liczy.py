@@ -189,7 +189,10 @@ def main():
     ]
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(channel="chrome", headless=True)
+        try:
+            browser = p.chromium.launch(channel="chrome", headless=True)
+        except Exception:
+            browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 430, "height": 900})
         page.goto(BASE, wait_until="domcontentloaded")
         page.locator("#display").wait_for()
