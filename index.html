@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl" data-lcd="green" data-font="modern">
+<html lang="pl" data-lcd="green" data-font="modern" data-model="casio">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -445,6 +445,7 @@
       button.key { height: 56px; font-size: 20px; }
     }
   </style>
+  <link rel="stylesheet" href="models.css" />
 </head>
 <body>
   <div class="stage">
@@ -755,7 +756,41 @@
       press(key);
     });
 
-    window.CasioCalc = { press, getState: () => ({ ...state }), render, setTheme };
+    const MODE_SVG = document.querySelector('button[data-key="mode"]').innerHTML;
+    const LABELS = {
+      casio: { AC: "AC", "+/-": "+/−", "%": "%", "=": "=", ",": ",", mode: null },
+      hp12c: { AC: "CLx", "+/-": "CHS", "%": "%", "=": "ENTER", ",": "·", mode: "ON" },
+      ti30xa: { AC: "ON/C", "+/-": "+/−", "%": "%", "=": "=", ",": "·", mode: "2nd" },
+    };
+    const BRAND = {
+      casio: { logo: "CASIO", model: "SL-300" },
+      hp12c: { logo: "hp", model: "12c" },
+      ti30xa: { logo: "TEXAS INSTRUMENTS", model: "TI-30Xa" },
+    };
+
+    function setModel(model) {
+      if (!LABELS[model]) model = "casio";
+      document.documentElement.setAttribute("data-model", model);
+      const map = LABELS[model];
+      document.querySelectorAll("button.key[data-key]").forEach((btn) => {
+        const k = btn.dataset.key;
+        if (k === "mode") {
+          btn.classList.toggle("icon", model === "casio");
+          btn.innerHTML = model === "casio" ? MODE_SVG : map.mode;
+          return;
+        }
+        if (map[k] != null) btn.textContent = map[k];
+      });
+      const logo = document.querySelector(".logo");
+      const mod = document.querySelector(".model");
+      if (logo) logo.textContent = BRAND[model].logo;
+      if (mod) mod.textContent = BRAND[model].model;
+      const calc = document.querySelector(".calc");
+      if (calc) calc.setAttribute("aria-label", BRAND[model].logo + " " + BRAND[model].model);
+      render();
+    }
+
+    window.CasioCalc = { press, getState: () => ({ ...state }), render, setTheme, setModel };
     render();
   </script>
 </body>

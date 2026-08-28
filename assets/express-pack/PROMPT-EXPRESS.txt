@@ -1,0 +1,13 @@
+Adobe Express — pack referencyjny do frontów kalkulatorów
+
+Modele (zdjęcia Wikimedia, domena publiczna / CC0):
+- hp-12c.jpg      Hewlett-Packard HP-12C (od 1981)
+- ti-30xa.jpg     Texas Instruments TI-30Xa
+- casio-ms300m.jpg Casio MS-300M (rodzina desktop jak SL-300)
+
+W Express:
+1. Importuj te 3 zdjęcia.
+2. Opcjonalnie: Firefly / Generative — „photorealistic product shot of [model], straight-on, studio light, no extra objects”.
+3. Nie publikuj automatycznie.
+
+Działające skórki są w aplikacji Mac: menu Model.

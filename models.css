@@ -1,0 +1,180 @@
+/* Real-model skins: Casio SL-300 (default), HP-12C, TI-30Xa */
+
+html[data-model="hp12c"] body,
+html[data-model="hp12c"].app body {
+  background: #1a1814;
+}
+
+html[data-model="hp12c"] .calc {
+  background: linear-gradient(180deg, #2a281f 0%, #141310 100%);
+  border-radius: 10px;
+}
+
+html[data-model="hp12c"] .face {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.15), transparent 40%),
+    #2f2f2f;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 2px #c4b17a,
+    inset 0 0 0 3px #1a1a1a;
+  padding: 8px 8px 10px;
+  position: relative;
+}
+
+html[data-model="hp12c"] .solar-row { display: none; }
+
+html[data-model="hp12c"] .brand {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 2;
+  padding: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
+html[data-model="hp12c"] .logo {
+  font-family: Palatino, "Times New Roman", serif;
+  font-size: 15px;
+  letter-spacing: 0;
+  color: #1a1408;
+  background: #c9b27a;
+  padding: 2px 7px 0;
+  border-radius: 2px 2px 0 0;
+  text-shadow: none;
+}
+
+html[data-model="hp12c"] .model {
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: #1a1408;
+  background: #c9b27a;
+  padding: 0 7px 3px;
+  border-radius: 0 0 2px 2px;
+}
+
+html[data-model="hp12c"] .lcd-bezel {
+  background: linear-gradient(180deg, #d7c9a4, #b39a68);
+  border-radius: 4px;
+  padding: 14px 88px 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
+}
+
+html[data-model="hp12c"] .lcd {
+  height: 52px;
+  border-radius: 2px;
+}
+
+html[data-model="hp12c"] button.key {
+  border-radius: 5px;
+  background: linear-gradient(180deg, #3a3a3a, #141414);
+  color: #f3f3f3;
+  box-shadow:
+    0 3px 0 #050505,
+    inset 0 1px 0 rgba(255,255,255,.18);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+html[data-model="hp12c"] button.key::after { display: none; }
+html[data-model="hp12c"] button.fn {
+  background: linear-gradient(180deg, #333, #121212);
+  color: #7ec0ff;
+}
+html[data-model="hp12c"] button.gold {
+  background: linear-gradient(180deg, #3d3d3d, #181818);
+  color: #eee;
+  box-shadow: 0 3px 0 #050505, inset 0 1px 0 rgba(255,255,255,.14);
+}
+html[data-model="hp12c"] button[data-key="="] {
+  background: linear-gradient(180deg, #2c2c2c, #0e0e0e);
+  font-size: 10px;
+  letter-spacing: .18em;
+}
+html[data-model="hp12c"] .pad { gap: 6px; }
+
+html.app[data-model="hp12c"] .lcd { height: clamp(44px, 18vh, 58px); }
+
+/* —— TI-30Xa —— */
+html[data-model="ti30xa"] body,
+html[data-model="ti30xa"].app body {
+  background: #3a3d40;
+}
+
+html[data-model="ti30xa"] .calc {
+  background: linear-gradient(180deg, #5a5e63 0%, #2e3236 100%);
+  border-radius: 28px 28px 36px 36px;
+}
+
+html[data-model="ti30xa"] .face {
+  background: #4a4e52;
+  border-radius: 18px 18px 24px 24px;
+  box-shadow: none;
+  padding: 8px 10px 14px;
+}
+
+html[data-model="ti30xa"] .solar-row { display: none; }
+
+html[data-model="ti30xa"] .brand {
+  justify-content: space-between;
+  padding: 4px 6px 8px;
+}
+
+html[data-model="ti30xa"] .logo {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: #d4c36a;
+  text-shadow: none;
+}
+
+html[data-model="ti30xa"] .model {
+  font-family: Arial Black, Inter, sans-serif;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: #f4f4f4;
+}
+
+html[data-model="ti30xa"] .lcd-bezel {
+  background: #1a1a1a;
+  border-radius: 4px;
+  padding: 10px;
+  box-shadow: none;
+  border: 3px solid #ececec;
+  margin-bottom: 12px;
+}
+
+html[data-model="ti30xa"] button.key {
+  border-radius: 8px;
+  box-shadow:
+    0 3px 0 #1a1a1a,
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+html[data-model="ti30xa"] button.key::after { opacity: .25; }
+html[data-model="ti30xa"] button.silver {
+  background: linear-gradient(180deg, #3a3a3a, #111);
+  color: #fff;
+}
+html[data-model="ti30xa"] button.fn {
+  background: linear-gradient(180deg, #f3f3f3, #c8c8c8);
+  color: #222;
+}
+html[data-model="ti30xa"] button.gold {
+  background: linear-gradient(180deg, #d9d9d9, #9a9a9a);
+  color: #111;
+  box-shadow: 0 3px 0 #3a3a3a, inset 0 1px 0 rgba(255,255,255,.5);
+}
+html[data-model="ti30xa"] button[data-key="mode"] {
+  background: linear-gradient(180deg, #9fd15a, #5a9a28);
+  color: #143000;
+}
+html[data-model="ti30xa"] button[data-key="AC"] {
+  background: linear-gradient(180deg, #f3f3f3, #c8c8c8);
+  color: #222;
+}
+
+html[data-model="hp12c"] .hint,
+html[data-model="ti30xa"] .hint { display: none; }

@@ -1,0 +1,16 @@
+Reference photos (Wikimedia Commons):
+
+HP-12C
+  File:HP-12C_programmable_calculator.jpg
+  Author: Mze / Superbass
+  License: Public domain
+
+TI-30Xa
+  File:Calculator-TI-30XA-rev2015.jpg
+  Author: Mikus
+  License: CC0 1.0
+
+Casio MS-300M
+  File:Casio_MS-300M_Calculator.jpg
+  Source: Wikimedia Commons
+  Used as color/layout reference for the Casio desktop family (SL-300 / MS-300M).

@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   var webView: WKWebView?
   private var lcdItems: [String: NSMenuItem] = [:]
   private var fontItems: [String: NSMenuItem] = [:]
+  private var modelItems: [String: NSMenuItem] = [:]
 
   private var lcd: String {
     get { UserDefaults.standard.string(forKey: "casio.lcd") ?? "green" }
@@ -20,6 +21,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   private var font: String {
     get { UserDefaults.standard.string(forKey: "casio.font") ?? "modern" }
     set { UserDefaults.standard.set(newValue, forKey: "casio.font") }
+  }
+  private var model: String {
+    get { UserDefaults.standard.string(forKey: "casio.model") ?? "casio" }
+    set { UserDefaults.standard.set(newValue, forKey: "casio.model") }
   }
 
   func applicationWillFinishLaunching(_ notification: Notification) {
@@ -49,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     document.documentElement.classList.add('app');
     document.documentElement.setAttribute('data-lcd', '\(lcd)');
     document.documentElement.setAttribute('data-font', '\(font)');
+    document.documentElement.setAttribute('data-model', '\(model)');
     """
     config.userContentController.addUserScript(
       WKUserScript(source: boot, injectionTime: .atDocumentStart, forMainFrameOnly: true)
@@ -96,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
     self.window = window
     self.webView = webView
+    applyWindowShape()
     refreshChecks()
   }
 
@@ -108,8 +115,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   }
 
   private func applyTheme() {
-    let js = "window.CasioCalc && CasioCalc.setTheme('\(lcd)', '\(font)')"
+    let js = "window.CasioCalc && (CasioCalc.setTheme('\(lcd)', '\(font)'), CasioCalc.setModel('\(model)'))"
     webView?.evaluateJavaScript(js, completionHandler: nil)
+    window?.title = [
+      "casio": "CASIO SL-300",
+      "hp12c": "HP-12C",
+      "ti30xa": "TI-30Xa",
+    ][model] ?? "CASIO SL-300"
+  }
+
+  private func applyWindowShape() {
+    guard let window else { return }
+    let sizes: [String: (CGFloat, CGFloat)] = [
+      "casio": (430, 760),
+      "hp12c": (780, 420),
+      "ti30xa": (390, 720),
+    ]
+    let pair = sizes[model] ?? (430, 760)
+    let w = pair.0
+    let h = pair.1
+    window.minSize = NSSize(width: w * 0.72, height: h * 0.72)
+    window.aspectRatio = NSSize(width: w, height: h + 28)
+    window.setContentSize(NSSize(width: w, height: h))
+    let mouse = NSEvent.mouseLocation
+    let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
+    if let vis = screen?.visibleFrame {
+      var frame = window.frame
+      frame.origin.x = vis.midX - frame.width / 2
+      frame.origin.y = vis.midY - frame.height / 2
+      window.setFrame(frame, display: true, animate: true)
+    }
   }
 
   private func radioItem(title: String, action: Selector, key: String) -> NSMenuItem {
@@ -154,6 +189,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     fontItem.submenu = fontMenu
     fontItems = ["modern": modern, "segment": segment, "pixel": pixel]
 
+    let modelItem = NSMenuItem(title: "Model", action: nil, keyEquivalent: "")
+    menubar.addItem(modelItem)
+    let modelMenu = NSMenu(title: "Model")
+    let mCasio = radioItem(title: "Casio SL-300", action: #selector(chooseModel(_:)), key: "casio")
+    let mHp = radioItem(title: "HP-12C", action: #selector(chooseModel(_:)), key: "hp12c")
+    let mTi = radioItem(title: "TI-30Xa", action: #selector(chooseModel(_:)), key: "ti30xa")
+    modelMenu.addItem(mCasio)
+    modelMenu.addItem(mHp)
+    modelMenu.addItem(mTi)
+    modelItem.submenu = modelMenu
+    modelItems = ["casio": mCasio, "hp12c": mHp, "ti30xa": mTi]
+
     let editItem = NSMenuItem()
     menubar.addItem(editItem)
     let editMenu = NSMenu(title: "Edycja")
@@ -166,6 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
   private func refreshChecks() {
     for (key, item) in lcdItems { item.state = key == lcd ? .on : .off }
     for (key, item) in fontItems { item.state = key == font ? .on : .off }
+    for (key, item) in modelItems { item.state = key == model ? .on : .off }
   }
 
   @objc func chooseLcd(_ sender: NSMenuItem) {
@@ -179,6 +227,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     guard let key = sender.representedObject as? String else { return }
     font = key
     refreshChecks()
+    applyTheme()
+  }
+
+  @objc func chooseModel(_ sender: NSMenuItem) {
+    guard let key = sender.representedObject as? String else { return }
+    model = key
+    refreshChecks()
+    applyWindowShape()
     applyTheme()
   }
 }
