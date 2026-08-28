@@ -213,43 +213,102 @@
       align-items: flex-end;
       justify-content: flex-end;
       min-height: 0;
+      overflow: hidden;
+    }
+
+    .value-stack {
+      display: grid;
+      justify-items: end;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .value-ghost,
+    .value {
+      grid-area: 1 / 1;
+      text-align: right;
+      white-space: nowrap;
+      line-height: 1;
+      font: inherit;
+      letter-spacing: inherit;
     }
 
     .value-ghost {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: flex-end;
-      justify-content: flex-end;
-      opacity: 0;
+      visibility: hidden;
       pointer-events: none;
-      white-space: nowrap;
-      line-height: 1;
+    }
+
+    html[data-lcd="gray"] .value-ghost {
+      visibility: visible;
+      color: #2c341c;
+      opacity: 0.1;
+    }
+
+    html[data-font="modern"] .value-ghost {
+      visibility: hidden;
     }
 
     .value {
       position: relative;
-      text-align: right;
-      line-height: 1;
-      white-space: nowrap;
+      overflow: visible;
     }
+
+    .value.lcd-hidden {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    .digit-field {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      gap: 0.05em;
+    }
+    .digit-field[hidden] { display: none !important; }
+    .dig {
+      position: relative;
+      width: 0.84em;
+      text-align: center;
+      line-height: 1;
+      overflow: visible;
+    }
+    html[data-font="segment"] .dig,
+    html[data-font="pixel"] .dig {
+      width: 1.05em;
+    }
+    .dig .g {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      color: #2a3218;
+      opacity: 0.13;
+      pointer-events: none;
+    }
+    .dig .v { position: relative; z-index: 1; }
 
     /* --- ekran --- */
     html[data-lcd="gray"] .lcd-bezel {
-      background: #5c6358;
+      background: #4e554c;
       box-shadow:
-        0 1px 0 rgba(255,255,255,.28),
-        inset 0 3px 8px rgba(0,0,0,.45);
+        0 1px 0 rgba(255,255,255,.22),
+        inset 0 3px 7px rgba(0,0,0,.5);
     }
     html[data-lcd="gray"] .lcd {
-      background: linear-gradient(180deg, #c8d0b4 0%, #aeb896 55%, #9aa882 100%);
-      color: #1a2014;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.28), transparent 32%),
+        linear-gradient(180deg, #d2dac6 0%, #c3cbb6 42%, #aeb89c 100%);
+      color: #12160c;
       text-shadow: none;
-      box-shadow: inset 0 0 0 1px rgba(40, 48, 28, .18);
+      box-shadow:
+        inset 0 1px 1px rgba(255,255,255,.4),
+        inset 0 -1px 3px rgba(50,60,30,.18);
     }
     html[data-lcd="gray"] .lcd.error { color: #4a1810; text-shadow: none; }
-    html[data-lcd="gray"] .value-ghost { opacity: .16; color: #1a2014; }
-    html[data-lcd="gray"] .indicators { color: #1a2014; }
+    html[data-lcd="gray"] .indicators { color: #12160c; opacity: .55; }
 
     html[data-lcd="amber"] .lcd {
       background:
@@ -463,8 +522,11 @@
           <div class="lcd" id="lcd">
             <div class="indicators" id="indicators"></div>
             <div class="value-row">
-              <div class="value-ghost" aria-hidden="true">888888888888</div>
-              <div class="value" id="display">0</div>
+              <div class="digit-field" id="digit-field" hidden></div>
+              <div class="value-stack">
+                <div class="value-ghost" aria-hidden="true">88888888</div>
+                <div class="value" id="display">0</div>
+              </div>
             </div>
           </div>
         </div>
@@ -672,10 +734,39 @@
       return s;
     }
 
+    function ghostSlots() {
+      const model = document.documentElement.getAttribute("data-model") || "casio";
+      return model === "casio" ? 8 : 10;
+    }
+
+    function paintSlots(shown) {
+      const field = document.getElementById("digit-field");
+      const stack = document.querySelector(".value-stack");
+      const lcdGray = document.documentElement.getAttribute("data-lcd") === "gray";
+      const sevenSeg = currentFont() === "segment" || currentFont() === "pixel";
+      const useSlots = lcdGray && sevenSeg;
+      if (field) field.hidden = !useSlots;
+      if (stack) stack.style.display = useSlots ? "none" : "grid";
+      displayEl.classList.toggle("lcd-hidden", useSlots);
+      if (!useSlots || !field) return;
+      const n = ghostSlots();
+      let chars = shown;
+      if (chars.length > n) chars = chars.slice(-n);
+      const lead = n - chars.length;
+      let html = "";
+      for (let i = 0; i < n; i++) {
+        const ch = i < lead ? "" : chars[i - lead];
+        html += `<span class="dig"><span class="g">8</span><span class="v">${ch || ""}</span></span>`;
+      }
+      field.innerHTML = html;
+    }
+
     function render() {
       const n = parsePl(state.entry);
       const raw = state.error ? "Błąd" : (state.entering ? state.entry : formatPl(n));
-      displayEl.textContent = visualText(raw);
+      const shown = visualText(raw);
+      displayEl.textContent = shown;
+      paintSlots(shown);
       lcdEl.classList.toggle("error", state.error);
       indicatorsEl.textContent = state.error ? "" : (state.op || "");
     }
