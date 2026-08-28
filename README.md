@@ -2,6 +2,8 @@
 
 Działający kalkulator biurkowy w stylu Casio: srebrne klawisze 3D, złote operatory, przecinek polski.
 
+**Live:** https://casio-kalkulator.vercel.app
+
 ## Uruchomienie
 
 Otwórz `index.html` albo:
