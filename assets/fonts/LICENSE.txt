@@ -1,0 +1,11 @@
+DSEG7 Classic / DSEG7 Classic MINI
+  Copyright keshikan — SIL Open Font License 1.1
+  https://github.com/keshikan/DSEG
+
+Tiny5
+  Copyright 2024 The Tiny5 Project Authors — SIL Open Font License 1.1
+  https://github.com/Gissio/font_tiny5
+
+Press Start 2P
+  Copyright 2012 The Press Start 2P Project Authors — SIL Open Font License 1.1
+  Reserved Font Name "Press Start 2P"

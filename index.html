@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" data-lcd="green" data-font="modern">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -8,6 +8,41 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Michroma&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
   <style>
+    @font-face {
+      font-family: "DSEG7 Classic";
+      src: url("assets/fonts/DSEG7Classic-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "DSEG7 Classic";
+      src: url("assets/fonts/DSEG7Classic-Bold.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "DSEG7 Mini";
+      src: url("assets/fonts/DSEG7ClassicMini-Bold.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Tiny5";
+      src: url("assets/fonts/Tiny5-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Press Start 2P";
+      src: url("assets/fonts/PressStart2P-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
     :root {
       --silver-hi: #f5f7fa;
       --silver-mid: #c5c9d0;
@@ -171,11 +206,87 @@
       gap: 10px;
     }
 
+    .value-row {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      min-height: 0;
+    }
+
+    .value-ghost {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
     .value {
+      position: relative;
       text-align: right;
       line-height: 1;
       white-space: nowrap;
     }
+
+    /* --- ekran --- */
+    html[data-lcd="gray"] .lcd-bezel {
+      background: #5c6358;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.28),
+        inset 0 3px 8px rgba(0,0,0,.45);
+    }
+    html[data-lcd="gray"] .lcd {
+      background: linear-gradient(180deg, #c8d0b4 0%, #aeb896 55%, #9aa882 100%);
+      color: #1a2014;
+      text-shadow: none;
+      box-shadow: inset 0 0 0 1px rgba(40, 48, 28, .18);
+    }
+    html[data-lcd="gray"] .lcd.error { color: #4a1810; text-shadow: none; }
+    html[data-lcd="gray"] .value-ghost { opacity: .16; color: #1a2014; }
+    html[data-lcd="gray"] .indicators { color: #1a2014; }
+
+    html[data-lcd="amber"] .lcd {
+      background:
+        radial-gradient(120% 80% at 50% 0%, rgba(255, 160, 40, .18), transparent 55%),
+        linear-gradient(180deg, #2a1606, #100804);
+      color: #ffb020;
+      text-shadow: 0 0 12px rgba(255, 150, 0, .55);
+    }
+    html[data-lcd="amber"] .lcd.error {
+      color: #ff6a30;
+      text-shadow: 0 0 10px rgba(255, 80, 0, .45);
+    }
+    html[data-lcd="amber"] .indicators { color: #ffb020; }
+
+    html[data-lcd="green"] .lcd { /* default */ }
+
+    /* --- czcionki LCD --- */
+    html[data-font="modern"] .lcd {
+      font-family: "Share Tech Mono", ui-monospace, monospace;
+      letter-spacing: .06em;
+    }
+    html[data-font="segment"] .lcd {
+      font-family: "DSEG7 Classic", ui-monospace, monospace;
+      font-weight: 400;
+      letter-spacing: .04em;
+      font-size: clamp(28px, 8.5vw, 42px);
+    }
+    html[data-font="pixel"] .lcd {
+      font-family: "DSEG7 Mini", Tiny5, "Press Start 2P", ui-monospace, monospace;
+      font-weight: 700;
+      letter-spacing: .06em;
+      font-size: clamp(26px, 8vw, 40px);
+      -webkit-font-smoothing: none;
+      font-smooth: never;
+    }
+    html.app[data-font="segment"] .lcd { font-size: clamp(22px, 5.6vh, 40px); }
+    html.app[data-font="pixel"] .lcd { font-size: clamp(22px, 5.8vh, 40px); }
 
     .pad {
       display: grid;
@@ -279,13 +390,55 @@
       text-shadow: 0 1px 2px rgba(0,0,0,.6);
     }
 
+    html.app,
     html.app body {
-      padding: 10px;
-      min-height: 100vh;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      padding: 0;
+      overflow: hidden;
       user-select: none;
+      display: block;
+      background: #141518;
     }
     html.app .hint { display: none; }
-    html.app .stage { width: 100%; }
+    html.app .stage {
+      width: 100%;
+      height: 100%;
+      gap: 0;
+    }
+    html.app .calc {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      padding: 4px 4px 6px;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+    }
+    html.app .calc::before { display: none; }
+    html.app .face {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      padding: 10px 8px 10px;
+    }
+    html.app .lcd-bezel { margin-bottom: 10px; flex: 0 0 auto; }
+    html.app .lcd { height: clamp(56px, 12vh, 84px); font-size: clamp(28px, 7vh, 48px); }
+    html.app .pad {
+      flex: 1;
+      min-height: 0;
+      grid-template-rows: repeat(5, minmax(0, 1fr));
+      gap: clamp(6px, 1.2vh, 10px);
+    }
+    html.app button.key {
+      height: 100%;
+      min-height: 0;
+      font-size: clamp(16px, 3.4vh, 22px);
+      border-radius: clamp(10px, 1.6vh, 14px);
+    }
 
     @media (max-width: 420px) {
       .lcd { height: 74px; }
@@ -308,7 +461,10 @@
         <div class="lcd-bezel">
           <div class="lcd" id="lcd">
             <div class="indicators" id="indicators"></div>
-            <div class="value" id="display">0</div>
+            <div class="value-row">
+              <div class="value-ghost" aria-hidden="true">888888888888</div>
+              <div class="value" id="display">0</div>
+            </div>
           </div>
         </div>
         <div class="pad">
@@ -502,11 +658,32 @@
       setTimeout(() => render(), 700);
     }
 
+    function currentFont() {
+      return document.documentElement.getAttribute("data-font") || "modern";
+    }
+
+    function visualText(s) {
+      const font = currentFont();
+      if (font === "segment" || font === "pixel") {
+        if (s === "Błąd") return "Err";
+        return s.replace(/\s/g, "").replace(/,/g, ".");
+      }
+      return s;
+    }
+
     function render() {
       const n = parsePl(state.entry);
-      displayEl.textContent = state.error ? "Błąd" : (state.entering ? state.entry : formatPl(n));
+      const raw = state.error ? "Błąd" : (state.entering ? state.entry : formatPl(n));
+      displayEl.textContent = visualText(raw);
       lcdEl.classList.toggle("error", state.error);
       indicatorsEl.textContent = state.error ? "" : (state.op || "");
+    }
+
+    function setTheme(lcd, font) {
+      const root = document.documentElement;
+      if (lcd) root.setAttribute("data-lcd", lcd);
+      if (font) root.setAttribute("data-font", font);
+      render();
     }
 
     function clickSound() {
@@ -578,7 +755,7 @@
       press(key);
     });
 
-    window.CasioCalc = { press, getState: () => ({ ...state }), render };
+    window.CasioCalc = { press, getState: () => ({ ...state }), render, setTheme };
     render();
   </script>
 </body>
