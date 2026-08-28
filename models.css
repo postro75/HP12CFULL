@@ -123,38 +123,83 @@ html[data-model="hp12c"] .pad {
 }
 html[data-model="hp12c"] .lcd-bezel {
   position: absolute;
-  left: 18.2%;
-  top: 9.4%;
-  width: 47.6%;
-  height: 14.8%;
+  left: 17.55%;
+  top: 11.15%;
+  width: 50.6%;
+  height: 10.35%;
   margin: 0;
-  padding: 0.35% 0.9% 0.45%;
+  padding: 0;
   z-index: 3;
-  background: #c8ceba;
-  border-radius: 2px;
+  background: transparent;
+  border-radius: 1px;
   box-shadow: none;
   border: 0;
+  container-type: size;
+  container-name: hp-lcd;
 }
 html[data-model="hp12c"] .lcd {
+  position: relative;
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
   border-radius: 1px;
-  background: linear-gradient(180deg, #d5dbc8 0%, #c4cab6 55%, #b8beab 100%);
-  color: #161a10;
+  background: linear-gradient(180deg, #8c8c6a 0%, #80805e 55%, #747452 100%);
+  color: #14160c;
   text-shadow: none;
-  padding: 2px 6px 1px;
-  box-shadow: inset 0 1px 2px rgba(255,255,255,.28);
+  padding: 10cqh 4cqw 12cqh;
+  box-shadow: none;
   font-family: "DSEG7 Classic", ui-monospace, monospace;
-  letter-spacing: .03em;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1;
+  font-size: min(11.2cqw, 62cqh);
+  justify-content: center;
+  overflow: hidden;
 }
 html[data-model="hp12c"] .lcd.error { color: #4a1810; text-shadow: none; }
 html[data-model="hp12c"] .indicators {
-  height: 10px;
-  font-size: 8px;
-  color: #161a10;
-  opacity: .55;
+  position: absolute;
+  left: 3.2%;
+  top: 6%;
+  height: auto;
+  font-size: max(6px, 11cqh);
+  letter-spacing: .14em;
+  color: #1a1e12;
+  opacity: .5;
+  z-index: 2;
+  pointer-events: none;
 }
-html.app[data-model="hp12c"] .lcd { height: 100%; font-size: clamp(24px, 8.2vh, 44px); }
-html[data-model="hp12c"] .dig { width: 0.98em; }
+html[data-model="hp12c"] .value-row {
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  overflow: visible;
+}
+html[data-model="hp12c"] .digit-field {
+  align-items: center;
+  gap: 0;
+  height: 1em;
+  max-width: 100%;
+  transform: translateY(-6%);
+}
+html.app[data-model="hp12c"] .lcd {
+  height: 100%;
+  max-height: 100%;
+  font-size: min(11.2cqw, 62cqh);
+}
+html[data-model="hp12c"] .dig {
+  width: 0.7em;
+  height: 1em;
+  line-height: 1;
+  overflow: visible;
+}
+html[data-model="hp12c"] .dig .g,
+html[data-model="hp12c"] .dig .v {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+html[data-model="hp12c"] .dig .g { opacity: 0.07; }
 
 .hp-hotspots {
   display: none;
