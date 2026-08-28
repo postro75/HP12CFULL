@@ -22,6 +22,7 @@ swiftc "$ROOT/macos/App.swift" \
 cp "$ROOT/macos/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/index.html" "$RES/index.html"
 cp "$ROOT/models.css" "$RES/models.css"
+cp -R "$ROOT/hp" "$RES/hp"
 cp -R "$ROOT/assets" "$RES/assets"
 
 echo "→ ikona"

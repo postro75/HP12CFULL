@@ -582,12 +582,34 @@
           <button type="button" class="hs" data-key="0" aria-label="0" style="left:59.87%;top:81.85%;width:7.92%;height:10.40%;"></button>
           <button type="button" class="hs" data-key="," aria-label="Kropka" style="left:68.69%;top:81.85%;width:7.92%;height:10.40%;"></button>
           <button type="button" class="hs" data-key="+" aria-label="Dodawanie" style="left:86.33%;top:81.85%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="n" aria-label="n" style="left:6.95%;top:40.75%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="i" aria-label="i" style="left:15.77%;top:40.75%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="pv" aria-label="PV" style="left:24.59%;top:40.75%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="pmt" aria-label="PMT" style="left:33.41%;top:40.75%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="fv" aria-label="FV" style="left:42.23%;top:40.75%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="yx" aria-label="y^x" style="left:6.95%;top:54.45%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="recip" aria-label="1/x" style="left:15.77%;top:54.45%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="pctt" aria-label="%T" style="left:24.59%;top:54.45%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="dlt" aria-label="delta%" style="left:33.41%;top:54.45%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="rdn" aria-label="R down" style="left:24.59%;top:68.15%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="xy" aria-label="x exchange y" style="left:33.41%;top:68.15%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="f" aria-label="f" style="left:15.77%;top:81.85%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="g" aria-label="g" style="left:24.59%;top:81.85%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="sto" aria-label="STO" style="left:33.41%;top:81.85%;width:7.92%;height:10.40%;"></button>
+          <button type="button" class="hs" data-key="rcl" aria-label="RCL" style="left:42.23%;top:81.85%;width:7.92%;height:10.40%;"></button>
         </div>
       </div>
     </div>
     <p class="hint">Przecinek dziesiętny · klawiatura działa · CASIO 3D silver</p>
   </div>
 
+  <script src="hp/rpn-stack.js"></script>
+  <script src="hp/memory.js"></script>
+  <script src="hp/financial.js"></script>
+  <script src="hp/math-functions.js"></script>
+  <script src="hp/display.js"></script>
+  <script src="hp/calculator.js"></script>
+  <script src="hp/hp-adapter.js"></script>
   <script>
     const state = {
       acc: null,
@@ -816,7 +838,24 @@
       } catch (_) {}
     }
 
+    window.hpPaint = function (raw, calc) {
+      const text = String(raw);
+      const isErr = /^Error/i.test(text);
+      displayEl.textContent = text;
+      paintSlots(text.replace(/,/g, "").replace(/\s/g, ""));
+      lcdEl.classList.toggle("error", isErr);
+      const bits = [];
+      if (calc && calc.prefixF) bits.push("f");
+      if (calc && calc.prefixG) bits.push("g");
+      if (calc && calc.financial && calc.financial.paymentMode === "BEGIN") bits.push("BEGIN");
+      indicatorsEl.textContent = bits.join(" ");
+    };
+
     function press(key) {
+      if (document.documentElement.getAttribute("data-model") === "hp12c") {
+        if (typeof window.hpPress === "function") window.hpPress(key);
+        return;
+      }
       if (state.error && key !== "AC") return;
       switch (key) {
         case "0": case "1": case "2": case "3": case "4":
@@ -901,10 +940,14 @@
       if (mod) mod.textContent = BRAND[model].model;
       const calc = document.querySelector(".calc");
       if (calc) calc.setAttribute("aria-label", BRAND[model].logo + " " + BRAND[model].model);
+      if (model === "hp12c" && typeof window.hpInit === "function") window.hpInit();
       render();
     }
 
     window.CasioCalc = { press, getState: () => ({ ...state }), render, setTheme, setModel };
+    if (document.documentElement.getAttribute("data-model") === "hp12c" && typeof window.hpInit === "function") {
+      window.hpInit();
+    }
     render();
   </script>
 </body>
