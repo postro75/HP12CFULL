@@ -19,3 +19,12 @@ python3 tests/e2e_liczy.py
 ```
 
 Klawiatura laptopa działa (`Enter`, `Escape`, `*`, `/`, `.`).
+
+## Aplikacja na Maca
+
+```bash
+./macos/build.sh
+open ~/Applications/CASIO\ SL-300.app
+```
+
+Apka ląduje w `~/Applications/CASIO SL-300.app` (natywne okno WebKit, bez przeglądarki).
