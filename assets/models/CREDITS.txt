@@ -10,6 +10,10 @@ TI-30Xa
   Author: Mikus
   License: CC0 1.0
 
+HP-12C photorealistic overlay
+  assets/models/HP12C.png
+  Source: user Downloads/HP12C.png
+
 Casio MS-300M
   File:Casio_MS-300M_Calculator.jpg
   Source: Wikimedia Commons

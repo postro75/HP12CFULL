@@ -128,7 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     guard let window else { return }
     let sizes: [String: (CGFloat, CGFloat)] = [
       "casio": (430, 760),
-      "hp12c": (780, 420),
+      "hp12c": (812, 500),
       "ti30xa": (390, 720),
     ]
     let pair = sizes[model] ?? (430, 760)

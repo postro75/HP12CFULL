@@ -44,6 +44,7 @@ cat > "$APP/Contents/PkgInfo" <<'EOF'
 APPL????
 EOF
 
+xattr -cr "$APP" || true
 echo "→ podpis ad-hoc"
 codesign --force --deep -s - "$APP" >/dev/null
 

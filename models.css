@@ -98,6 +98,93 @@ html[data-model="hp12c"] .pad { gap: 6px; }
 
 html.app[data-model="hp12c"] .lcd { height: clamp(44px, 18vh, 58px); }
 
+/* Photorealistic HP-12C using Downloads/HP12C.png */
+html[data-model="hp12c"] .calc {
+  background: #0b0b0b;
+  border-radius: 6px;
+  padding: 0;
+}
+html[data-model="hp12c"] .face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  padding: 0;
+  border-radius: 4px;
+  box-shadow: none;
+  background: #111 url("assets/models/HP12C.png") center / 100% 100% no-repeat;
+}
+html[data-model="hp12c"] .solar-row,
+html[data-model="hp12c"] .brand,
+html[data-model="hp12c"] .pad {
+  display: none !important;
+}
+html[data-model="hp12c"] .lcd-bezel {
+  position: absolute;
+  left: 18.2%;
+  top: 9.4%;
+  width: 47.6%;
+  height: 14.8%;
+  margin: 0;
+  padding: 0.35% 0.9% 0.45%;
+  z-index: 3;
+  background: #c8ceba;
+  border-radius: 2px;
+  box-shadow: none;
+  border: 0;
+}
+html[data-model="hp12c"] .lcd {
+  height: 100%;
+  border-radius: 1px;
+  background: linear-gradient(180deg, #d5dbc8 0%, #c4cab6 55%, #b8beab 100%);
+  color: #161a10;
+  text-shadow: none;
+  padding: 2px 6px 1px;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.28);
+  font-family: "DSEG7 Classic", ui-monospace, monospace;
+  letter-spacing: .03em;
+}
+html[data-model="hp12c"] .lcd.error { color: #4a1810; text-shadow: none; }
+html[data-model="hp12c"] .indicators {
+  height: 10px;
+  font-size: 8px;
+  color: #161a10;
+  opacity: .55;
+}
+html.app[data-model="hp12c"] .lcd { height: 100%; font-size: clamp(24px, 8.2vh, 44px); }
+html[data-model="hp12c"] .dig { width: 0.98em; }
+
+.hp-hotspots {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+html[data-model="hp12c"] .hp-hotspots { display: block; }
+.hp-hotspots .hs {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: transparent;
+  font-size: 0;
+  cursor: pointer;
+  border-radius: 3px;
+  -webkit-tap-highlight-color: transparent;
+}
+.hp-hotspots .hs:focus-visible {
+  outline: 1px solid rgba(255,220,120,.7);
+  outline-offset: 1px;
+}
+.hp-hotspots .hs:active {
+  background: rgba(255,255,255,.14);
+}
+
 /* —— TI-30Xa —— */
 html[data-model="ti30xa"] body,
 html[data-model="ti30xa"].app body {
