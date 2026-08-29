@@ -38,10 +38,18 @@ def main():
         hs = page.locator(".hp-hotspots")
         ok("hotspot layer visible", hs.is_visible())
         n_hs = page.locator(".hp-hotspots .hs").count()
-        ok("exactly 35 hotspots", n_hs == 35, f"count={n_hs}")
+        ok("hotspots cover the keypad", n_hs >= 39, f"count={n_hs}")
 
-        def click_hs(key):
-            page.locator(f'.hp-hotspots .hs[data-key="{key}"]').first.click(force=True)
+        def click_hs(key, prefix=None):
+            if prefix:
+                loc = page.locator(
+                    f'.hp-hotspots .hs[data-prefix="{prefix}"][data-key="{key}"]'
+                )
+            else:
+                loc = page.locator(
+                    f'.hp-hotspots .hs[data-key="{key}"]:not([data-prefix])'
+                )
+            loc.first.click(force=True)
 
         def lcd():
             return page.locator("#display").inner_text()
@@ -211,6 +219,34 @@ def main():
            npv_lcd.replace(",", "").startswith("2679."), npv_lcd)
 
         page.evaluate("() => CasioCalc.press('mode')")
+        click_hs("1")
+        click_hs(",")
+        click_hs("2")
+        click_hs("3")
+        click_hs("9")
+        click_hs("pmt", prefix="f")
+        ok("RND gold label rounds 1,239 to 1.24", lcd() == "1.24", lcd())
+
+        page.evaluate("() => CasioCalc.press('mode')")
+        for k in "10000":
+            click_hs(k)
+        click_hs("+/-")
+        click_hs("g")
+        click_hs("pv")
+        for k in "4000":
+            click_hs(k)
+        click_hs("g")
+        click_hs("pmt")
+        click_hs("4")
+        click_hs("g")
+        click_hs("fv")
+        click_hs("fv", prefix="f")
+        irr_lcd = lcd()
+        ok("IRR gold label on same cashflows → ≈ 21.86",
+           irr_lcd.replace(",", "").startswith("21.8") or irr_lcd.replace(",", "").startswith("21.9"),
+           irr_lcd)
+
+        page.evaluate("() => CasioCalc.press('mode')")
         click_hs("g")
         click_hs("7")
         ok("BEGIN via g 7 on photo", "BEGIN" in ind().upper() or "BEG" in ind().upper()
@@ -223,6 +259,7 @@ def main():
             "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
             ",", "=", "AC", "+/-", "+", MINUS, MUL, DIV, "%",
             "mode", "yx", "recip", "pctt", "dlt", "rdn",
+            "eex", "rs", "sst", "sigma",
         ]:
             vis = page.locator(f'.hp-hotspots .hs[data-key="{key}"]').count()
             ok(f"hotspot {key} present", vis >= 1, f"count={vis}")

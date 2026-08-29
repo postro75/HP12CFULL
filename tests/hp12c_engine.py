@@ -328,6 +328,9 @@ def main():
         case("FIX 4 of 1 ENTER 3 ÷ → 0.3333",
              ["1", "=", "3", DIV, "f", "4"],
              lambda s: (s["lcd"] == "0.3333", f"lcd={s['lcd']}"))
+        case("RND f PMT : 1,239 → 1.24 at FIX 2",
+             ["1", ",", "2", "3", "9", "f", "pmt"],
+             lambda s: (eq(s["x"], 1.24) and s["lcd"] == "1.24", f"x={s['x']} lcd={s['lcd']}"))
         case("NPV: −10000 CF0, 4000 CFj, 4 Nj, 10 i → ≈ 2679.46",
              ["1", "0", "0", "0", "0", "+/-", "g", "pv",
               "4", "0", "0", "0", "g", "pmt",

@@ -31,6 +31,10 @@
     recip: "reciprocal",
     pctt: "percent-total",
     dlt: "delta-percent",
+    eex: "eex",
+    rs: "run-stop",
+    sst: "sst",
+    sigma: "sum-plus",
   };
 
   function dummyEl() {

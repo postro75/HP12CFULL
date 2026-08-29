@@ -232,6 +232,15 @@ html[data-model="hp12c"] .hp-hotspots { display: block; }
   outline: 1px solid rgba(255,220,120,.7);
   outline-offset: 1px;
 }
+.hp-hotspots .hs[data-prefix] { z-index: 6; }
+.hp-hotspots .hs:hover {
+  background: rgba(255, 214, 90, 0.18) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 210, 80, 0.85) !important;
+}
+.hp-hotspots .hs[data-prefix]:hover {
+  background: rgba(232, 168, 48, 0.28) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(232, 168, 48, 0.95) !important;
+}
 .hp-hotspots .hs:active {
   background: rgba(255,255,255,.14);
 }

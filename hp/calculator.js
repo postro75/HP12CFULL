@@ -261,6 +261,9 @@ class Calculator {
             case 'fv':  // f FV = IRR
                 this.handleIRR();
                 break;
+            case 'pmt':  // f PMT = RND
+                this.handleRound();
+                break;
             default:
                 console.log('Unimplemented gold function:', key);
         }
@@ -871,6 +874,17 @@ class Calculator {
         } catch (error) {
             this.display.showError(error.message);
         }
+    }
+
+    handleRound() {
+        this.finishNumberEntry();
+        const d = Math.max(0, this.display.decimals | 0);
+        const f = Math.pow(10, d);
+        this.stack.saveLastX();
+        this.stack.x = Math.round(this.stack.x * f) / f;
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+        this.updateDisplay();
     }
 
     handleIRR() {
