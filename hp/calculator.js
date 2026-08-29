@@ -26,6 +26,18 @@ class Calculator {
 
         // HP-12C: TVM keys store X after a new entry/result, otherwise solve.
         this.tvmStoreNext = false;
+        this.dmyMode = false;
+        this.eexActive = false;
+        this.eexMantissa = 0;
+        this.eexDigits = '';
+        this.eexNeg = false;
+        this.prgmMode = false;
+        this.program = [];
+        this.pc = 0;
+        this.skipNext = false;
+        this.pendingGto = false;
+        this.gtoDigits = '';
+        this.running = false;
         
         // References to DOM elements
         this.displayElement = null;
@@ -85,10 +97,61 @@ class Calculator {
     handleButtonClick(button) {
         const key = button.dataset.key;
         const primary = button.dataset.primary;
+
+        if (this.pendingGto && key.startsWith('digit-')) {
+            this.gtoDigits += key.replace('digit-', '');
+            if (this.gtoDigits.length >= 2) {
+                const line = parseInt(this.gtoDigits, 10);
+                this.pendingGto = false;
+                this.gtoDigits = '';
+                if (this.prgmMode) {
+                    if (this.program.length) {
+                        this.program[this.program.length - 1].addr = line;
+                    }
+                } else {
+                    this.pc = Math.max(0, Math.min(line - 1, this.program.length));
+                }
+            }
+            this.updateDisplay();
+            return;
+        }
+
+        if (this.prgmMode && key !== 'prefix-f' && key !== 'prefix-g' && key !== 'on') {
+            if (this.prefixF && key === 'run-stop') {
+                this.prgmMode = false;
+                this.prefixF = false;
+                this.display.setIndicator('f', false);
+                this.updateDisplay();
+                return;
+            }
+            if (this.prefixG && key === 'roll-down') {
+                this.pendingGto = true;
+                this.gtoDigits = '';
+                this.recordStep(key);
+                this.prefixG = false;
+                this.display.setIndicator('g', false);
+                this.updateDisplay();
+                return;
+            }
+            if (key === 'sst') {
+                if (this.prefixG) {
+                    this.pc = Math.max(0, this.pc - 1);
+                    this.prefixG = false;
+                } else {
+                    this.pc = Math.min(this.program.length, this.pc + 1);
+                }
+                this.updateDisplay();
+                return;
+            }
+            this.recordStep(key);
+            this.prefixF = false;
+            this.prefixG = false;
+            this.display.setIndicator('f', false);
+            this.display.setIndicator('g', false);
+            this.updateDisplay();
+            return;
+        }
         
-        console.log('Button pressed:', key, 'Prefix F:', this.prefixF, 'Prefix G:', this.prefixG);
-        
-        // Route to appropriate handler
         if (this.prefixF) {
             this.handleGoldFunction(key);
             this.prefixF = false;
@@ -231,6 +294,22 @@ class Calculator {
             case 'fv':
                 this.handleTVMKey('fv');
                 break;
+
+            case 'eex':
+                this.handleEex();
+                break;
+
+            case 'sum-plus':
+                this.handleSigmaPlus();
+                break;
+
+            case 'run-stop':
+                this.runProgram();
+                break;
+
+            case 'sst':
+                this.sstRun();
+                break;
                 
             default:
                 console.log('Unimplemented function:', key);
@@ -263,6 +342,34 @@ class Calculator {
                 break;
             case 'pmt':  // f PMT = RND
                 this.handleRound();
+                break;
+            case 'i':  // f i = INT simple interest
+                this.handleSimpleInterest();
+                break;
+            case 'chs':  // f CHS = DATE
+                this.handleDateAdd();
+                break;
+            case 'power-yx':  // f y^x = PRICE
+                this.handleBondPrice();
+                break;
+            case 'reciprocal':  // f 1/x = YTM
+                this.handleBondYtm();
+                break;
+            case 'percent-total':  // f %T = SL
+                this.handleDepr('sl');
+                break;
+            case 'delta-percent':  // f Δ% = SOYD
+                this.handleDepr('soyd');
+                break;
+            case 'percent':  // f % = DB
+                this.handleDepr('db');
+                break;
+            case 'clx':  // f CLx = CLEAR FIN
+                this.memory.clearFinancial();
+                break;
+            case 'run-stop':  // f R/S = P/R
+                this.prgmMode = true;
+                this.pc = this.program.length;
                 break;
             default:
                 console.log('Unimplemented gold function:', key);
@@ -332,7 +439,60 @@ class Calculator {
             case 'fv':  // g FV = Nj
                 this.handleNj();
                 break;
-                
+
+            case 'eex':  // g EEX = ΔDYS
+                this.handleDeltaDays();
+                break;
+
+            case 'digit-4':  // g 4 = D.MY
+                this.dmyMode = true;
+                break;
+
+            case 'digit-5':  // g 5 = M.DY
+                this.dmyMode = false;
+                break;
+
+            case 'digit-9':  // g 9 = MEM (CF count / remaining program)
+                this.handleMem();
+                break;
+
+            case 'digit-0':  // g 0 = x̄
+                this.handleMean();
+                break;
+
+            case 'decimal':  // g · = s
+                this.handleStdDev();
+                break;
+
+            case 'digit-6':  // g 6 = x̄w
+                this.handleWeightedMean();
+                break;
+
+            case 'digit-1':  // g 1 = x̂, r
+                this.handlePredictX();
+                break;
+
+            case 'digit-2':  // g 2 = ŷ, r
+                this.handlePredictY();
+                break;
+
+            case 'sum-plus':  // g Σ+ = Σ−
+                this.handleSigmaMinus();
+                break;
+
+            case 'clx':  // g CLx = x=0 (skip next if X ≠ 0)
+                this.skipNext = this.stack.x !== 0;
+                break;
+
+            case 'swap-xy':  // g x⇄y = x≤y
+                this.skipNext = this.stack.x > this.stack.y;
+                break;
+
+            case 'roll-down':  // g R↓ = GTO
+                this.pendingGto = true;
+                this.gtoDigits = '';
+                break;
+
             default:
                 console.log('Unimplemented blue function:', key);
         }
@@ -355,6 +515,13 @@ class Calculator {
             const registerNum = parseInt(digit);
             this.recallRegister(registerNum);
             this.pendingOperation = null;
+            return;
+        }
+
+        if (this.eexActive) {
+            if (this.eexDigits.length < 3) this.eexDigits += digit;
+            this.applyEex();
+            this.tvmStoreNext = true;
             return;
         }
         
@@ -392,6 +559,7 @@ class Calculator {
      * ENTER key: Push X to stack
      */
     enter() {
+        this.finishEex();
         this.stack.enter();
         this.currentInput = '';
         this.isNewNumber = true;
@@ -473,6 +641,7 @@ class Calculator {
      * Finish number entry (push to stack if needed)
      */
     finishNumberEntry() {
+        this.finishEex();
         this.isNewNumber = true;
         this.currentInput = "";
         this.hasDecimal = false;
@@ -483,6 +652,12 @@ class Calculator {
      * Change sign of X (CHS)
      */
     changeSign() {
+        if (this.eexActive) {
+            this.eexNeg = !this.eexNeg;
+            this.applyEex();
+            this.tvmStoreNext = true;
+            return;
+        }
         if (!this.isNewNumber) {
             // Change sign of current input
             if (this.currentInput.startsWith('-')) {
@@ -959,6 +1134,283 @@ class Calculator {
     // SYSTEM METHODS
     // ============================================
     
+    handleEex() {
+        if (this.eexActive) return;
+        this.eexMantissa = this.isNewNumber ? (this.stack.x || 1) : (parseFloat(this.currentInput) || 0);
+        if (this.isNewNumber && this.stack.stackLift) this.stack.lift();
+        this.eexActive = true;
+        this.eexDigits = '';
+        this.eexNeg = false;
+        this.isNewNumber = false;
+        this.tvmStoreNext = true;
+        this.applyEex();
+    }
+
+    applyEex() {
+        const exp = parseInt(this.eexDigits || '0', 10) * (this.eexNeg ? -1 : 1);
+        this.stack.x = this.eexMantissa * Math.pow(10, exp);
+    }
+
+    finishEex() {
+        if (!this.eexActive) return;
+        this.applyEex();
+        this.eexActive = false;
+        this.eexDigits = '';
+        this.eexNeg = false;
+        this.currentInput = String(this.stack.x);
+    }
+
+    handleSimpleInterest() {
+        this.finishNumberEntry();
+        const n = this.memory.getFinancialRegister('n');
+        const i = this.memory.getFinancialRegister('i');
+        const pv = this.memory.getFinancialRegister('pv');
+        const i360 = -pv * (i / 100) * (n / 360);
+        const i365 = -pv * (i / 100) * (n / 365);
+        this.stack.saveLastX();
+        this.stack.z = i365;
+        this.stack.y = Math.abs(pv);
+        this.stack.x = i360;
+        this.stack.stackLift = true;
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+    }
+
+    handleDateAdd() {
+        this.finishNumberEntry();
+        const H = window.HpHandbook;
+        const base = H.parsePacked(this.stack.y, this.dmyMode);
+        if (!base) { this.display.showError('Error 8'); return; }
+        const out = H.addDays(base, Math.round(this.stack.x));
+        this.stack.saveLastX();
+        this.stack.y = H.dayOfWeek(out);
+        this.stack.x = H.packDate(out, this.dmyMode);
+        this.display.overrideDecimals = 6;
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+    }
+
+    handleDeltaDays() {
+        this.finishNumberEntry();
+        const H = window.HpHandbook;
+        const a = H.parsePacked(this.stack.y, this.dmyMode);
+        const b = H.parsePacked(this.stack.x, this.dmyMode);
+        if (!a || !b) { this.display.showError('Error 8'); return; }
+        this.stack.saveLastX();
+        this.stack.y = H.days360(a, b);
+        this.stack.x = H.daysActual(a, b);
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+    }
+
+    handleSigmaPlus() {
+        this.finishNumberEntry();
+        const n = window.HpHandbook.sigmaPlus(this.memory, this.stack.x, this.stack.y);
+        this.stack.x = n;
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+        this.stack.stackLift = false;
+    }
+
+    handleSigmaMinus() {
+        this.finishNumberEntry();
+        const n = window.HpHandbook.sigmaMinus(this.memory, this.stack.x, this.stack.y);
+        this.stack.x = n;
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+        this.stack.stackLift = false;
+    }
+
+    handleMean() {
+        this.finishNumberEntry();
+        try {
+            const mx = window.HpHandbook.meanX(this.memory);
+            const my = window.HpHandbook.meanY(this.memory);
+            this.stack.saveLastX();
+            this.stack.y = my;
+            this.stack.x = mx;
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handleStdDev() {
+        this.finishNumberEntry();
+        try {
+            const sx = window.HpHandbook.stdX(this.memory);
+            const sy = window.HpHandbook.stdY(this.memory);
+            this.stack.saveLastX();
+            this.stack.y = sy;
+            this.stack.x = sx;
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handleWeightedMean() {
+        this.finishNumberEntry();
+        try {
+            this.stack.saveLastX();
+            this.stack.x = window.HpHandbook.weightedMeanX(this.memory);
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handlePredictY() {
+        this.finishNumberEntry();
+        try {
+            const lr = window.HpHandbook.linReg(this.memory);
+            const yhat = lr.slope * this.stack.x + lr.intercept;
+            this.stack.saveLastX();
+            this.stack.y = lr.r;
+            this.stack.x = yhat;
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handlePredictX() {
+        this.finishNumberEntry();
+        try {
+            const lr = window.HpHandbook.linReg(this.memory);
+            if (lr.slope === 0) throw new Error('Error 2');
+            const xhat = (this.stack.x - lr.intercept) / lr.slope;
+            this.stack.saveLastX();
+            this.stack.y = lr.r;
+            this.stack.x = xhat;
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handleDepr(kind) {
+        this.finishNumberEntry();
+        try {
+            const cost = this.memory.getFinancialRegister('pv');
+            const salvage = this.memory.getFinancialRegister('fv');
+            const life = this.memory.getFinancialRegister('n');
+            const year = Math.round(Math.abs(this.stack.x));
+            const db = this.memory.getFinancialRegister('i');
+            let r;
+            if (kind === 'sl') r = window.HpHandbook.deprSL(cost, salvage, life, year);
+            else if (kind === 'soyd') r = window.HpHandbook.deprSOYD(cost, salvage, life, year);
+            else r = window.HpHandbook.deprDB(cost, salvage, life, db, year);
+            this.stack.saveLastX();
+            this.stack.y = r.remaining;
+            this.stack.x = r.depr;
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handleBondPrice() {
+        this.finishNumberEntry();
+        try {
+            const H = window.HpHandbook;
+            const settle = H.parsePacked(this.stack.y, this.dmyMode);
+            const mat = H.parsePacked(this.stack.x, this.dmyMode);
+            if (!settle || !mat) throw new Error('Error 8');
+            const coupon = this.memory.getFinancialRegister('pmt');
+            const yld = this.memory.getFinancialRegister('i');
+            const bp = H.bondPrice(settle, mat, coupon, yld);
+            this.stack.saveLastX();
+            this.stack.y = bp.accrued;
+            this.stack.x = bp.clean;
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handleBondYtm() {
+        this.finishNumberEntry();
+        try {
+            const H = window.HpHandbook;
+            const settle = H.parsePacked(this.stack.y, this.dmyMode);
+            const mat = H.parsePacked(this.stack.x, this.dmyMode);
+            if (!settle || !mat) throw new Error('Error 8');
+            const coupon = this.memory.getFinancialRegister('pmt');
+            const price = this.memory.getFinancialRegister('pv');
+            const yld = H.bondYield(settle, mat, coupon, price);
+            this.stack.saveLastX();
+            this.stack.x = yld;
+            this.memory.setFinancialRegister('i', yld);
+            this.isNewNumber = true;
+            this.tvmStoreNext = true;
+        } catch (e) { this.display.showError(e.message); }
+    }
+
+    handleMem() {
+        this.finishNumberEntry();
+        const cfs = (this.memory.cashFlows || []).length;
+        const cfCount = Math.max(0, cfs - 1);
+        this.stack.y = cfCount;
+        this.stack.x = 99 - this.program.length;
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+    }
+
+    recordStep(key) {
+        if (this.program.length >= 99) return;
+        this.program.push({
+            key: key,
+            f: this.prefixF,
+            g: this.prefixG,
+            addr: 0,
+        });
+        this.pc = this.program.length;
+    }
+
+    executeStep(step) {
+        if (!step) return;
+        if (step.g && step.key === 'roll-down') {
+            this.pc = Math.max(0, (step.addr || 1) - 1);
+            return 'goto';
+        }
+        if (step.f) {
+            this.handleGoldFunction(step.key);
+            this.prefixF = false;
+        } else if (step.g) {
+            this.handleBlueFunction(step.key);
+            this.prefixG = false;
+        } else {
+            this.handlePrimaryFunction(step.key, step.key);
+        }
+        return null;
+    }
+
+    runProgram() {
+        if (this.prgmMode) return;
+        if (!this.program.length) return;
+        this.running = true;
+        let guard = 0;
+        if (this.pc >= this.program.length) this.pc = 0;
+        while (this.pc < this.program.length && guard++ < 5000) {
+            if (this.skipNext) {
+                this.skipNext = false;
+                this.pc += 1;
+                continue;
+            }
+            const step = this.program[this.pc];
+            if (!step.f && !step.g && step.key === 'run-stop') break;
+            const jumped = this.executeStep(step);
+            if (jumped !== 'goto') this.pc += 1;
+        }
+        this.running = false;
+        this.isNewNumber = true;
+    }
+
+    sstRun() {
+        if (this.prgmMode) return;
+        if (this.pc >= this.program.length) this.pc = 0;
+        if (!this.program.length) return;
+        const step = this.program[this.pc];
+        this.pc += 1;
+        if (this.skipNext) { this.skipNext = false; return; }
+        this.executeStep(step);
+        this.isNewNumber = true;
+    }
+
     /**
      * Reset calculator
      */
@@ -972,6 +1424,13 @@ class Calculator {
         this.prefixG = false;
         this.pendingOperation = null;
         this.tvmStoreNext = false;
+        this.dmyMode = false;
+        this.eexActive = false;
+        this.eexDigits = '';
+        this.eexNeg = false;
+        this.skipNext = false;
+        this.pendingGto = false;
+        this.gtoDigits = '';
         this.display.setFormat('fixed', 2);
         this.display.setIndicator('f', false);
         this.display.setIndicator('g', false);

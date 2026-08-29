@@ -343,6 +343,56 @@ def main():
               "4", "g", "fv", "f", "fv"],
              lambda s: (close(s["x"], 21.86, 0.15), f"irr x={s['x']} i={s['i']}"))
 
+        case("HB INT 60 n 7 i 450 CHS PV f i → 5.25 then + → 455.25",
+             ["6", "0", "n", "7", "i", "4", "5", "0", "+/-", "pv", "f", "i", "+"],
+             lambda s: (close(s["x"], 455.25, 0.02), f"x={s['x']}"))
+        case("HB INT 365-day: after INT R↓ x⇄y → ≈5.18",
+             ["6", "0", "n", "7", "i", "4", "5", "0", "+/-", "pv", "f", "i", "rdn", "xy"],
+             lambda s: (close(s["x"], 5.178, 0.02), f"x={s['x']}"))
+        case("EEX 2 EEX 3 → 2000",
+             ["2", "eex", "3"],
+             lambda s: (eq(s["x"], 2000), f"x={s['x']}"))
+        case("EEX 1 EEX 3 → 1000",
+             ["1", "eex", "3"],
+             lambda s: (eq(s["x"], 1000), f"x={s['x']} lcd={s['lcd']}"))
+        case("CLEAR FIN leaves X, zeros n/i",
+             ["4", "2", "=", "1", "0", "n", "5", "i", "f", "AC"],
+             lambda s: (eq(s["x"], 5) and eq(s["n"], 0) and eq(s["i"], 0),
+                        f"x={s['x']} n={s['n']} i={s['i']}"))
+        case("Σ+ y ENTER x : 3 ENTER 2 Σ+ , 5 ENTER 4 Σ+ , g 0 → x̄=3 ȳ=4",
+             ["3", "=", "2", "sigma", "5", "=", "4", "sigma", "g", "0"],
+             lambda s: (eq(s["x"], 3) and eq(s["y"], 4), f"x={s['x']} y={s['y']}"))
+        case("s sample std of same x's {2,4} → 1.414",
+             ["3", "=", "2", "sigma", "5", "=", "4", "sigma", "g", ","],
+             lambda s: (close(s["x"], 2 ** 0.5, 0.01), f"x={s['x']}"))
+        case("SL year 3: 10000 PV 1000 FV 5 n 3 f SL → 1800, rem 3600",
+             ["1", "0", "0", "0", "0", "pv", "1", "0", "0", "0", "fv", "5", "n", "3", "f", "pctt"],
+             lambda s: (close(s["x"], 1800, 0.05) and close(s["y"], 3600, 0.05),
+                        f"x={s['x']} y={s['y']}"))
+        case("SOYD year 1: 5/15×9000 = 3000",
+             ["1", "0", "0", "0", "0", "pv", "1", "0", "0", "0", "fv", "5", "n", "1", "f", "dlt"],
+             lambda s: (close(s["x"], 3000, 0.05), f"x={s['x']}"))
+        case("DB 200% year 1: 10000×0.4 = 4000",
+             ["1", "0", "0", "0", "0", "pv", "1", "0", "0", "0", "fv", "5", "n", "2", "0", "0", "i", "1", "f", "%"],
+             lambda s: (close(s["x"], 4000, 0.05), f"x={s['x']}"))
+        case("ΔDYS 4.281982 ENTER 7.041982 → 67 days",
+             ["4", ",", "2", "8", "1", "9", "8", "2", "=", "7", ",", "0", "4", "1", "9", "8", "2", "g", "eex"],
+             lambda s: (eq(s["x"], 67), f"x={s['x']} y={s['y']}"))
+        case("DATE 4.281982 ENTER 10 f DATE → 5.081982",
+             ["4", ",", "2", "8", "1", "9", "8", "2", "=", "1", "0", "f", "+/-"],
+             lambda s: (abs(s["x"] - 5.081982) < 1e-6, f"x={s['x']}"))
+        case("g MEM remaining program lines = 99",
+             ["g", "9"],
+             lambda s: (eq(s["x"], 99), f"x={s['x']}"))
+        case("Program 2 ENTER 3 + via P/R then R/S → 5",
+             ["f", "rs", "2", "=", "3", "+", "f", "rs", "rs"],
+             lambda s: (eq(s["x"], 5), f"x={s['x']} lcd={s['lcd']}"))
+        case("Par bond PRICE ~100 at coupon=yield 4.75",
+             ["4", ",", "7", "5", "pmt", "4", ",", "7", "5", "i",
+              "6", ",", "0", "1", "2", "0", "0", "6", "=",
+              "6", ",", "0", "1", "2", "0", "2", "6", "f", "yx"],
+             lambda s: (close(s["x"], 100, 2.0), f"price x={s['x']} y={s['y']}"))
+
         # BEGIN vs END: annuity-due vs ordinary. Same loan, |PMT_BEGIN| < |PMT_END|.
         tap("mode")
         tap("1", "2", "n", "1", "i", "1", "0", "0", "0", "pv", "0", "fv", "pmt")

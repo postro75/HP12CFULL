@@ -7,6 +7,7 @@ class DisplayManager {
     constructor() {
         this.format = 'fixed';    // 'fixed', 'sci', 'eng'
         this.decimals = 2;        // Number of decimal places
+        this.overrideDecimals = null;
         this.maxDigits = 10;      // Maximum display digits
         this.displayElement = null;
         this.indicatorElements = {};
@@ -82,11 +83,13 @@ class DisplayManager {
         }
 
         // Round to specified decimal places
-        const factor = Math.pow(10, this.decimals);
+        const decimals = this.overrideDecimals != null ? this.overrideDecimals : this.decimals;
+        this.overrideDecimals = null;
+        const factor = Math.pow(10, decimals);
         const rounded = Math.round(value * factor) / factor;
 
         // Format with fixed decimal places
-        let formatted = rounded.toFixed(this.decimals);
+        let formatted = rounded.toFixed(decimals);
 
         // Ensure not too many digits
         if (formatted.replace(/[^0-9]/g, '').length > this.maxDigits) {
