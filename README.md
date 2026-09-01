@@ -6,6 +6,10 @@ Działający kalkulator biurkowy w stylu Casio: srebrne klawisze 3D, złote oper
 **HP-12C:** https://casio-kalkulator.vercel.app/?model=hp12c  
 **TI-30Xa:** https://casio-kalkulator.vercel.app/?model=ti30xa
 
+**Test (HP12CFULL):** https://hp12cfull.vercel.app  
+**Test HP-12C:** https://hp12cfull.vercel.app/?model=hp12c  
+**Test TI-30Xa:** https://hp12cfull.vercel.app/?model=ti30xa
+
 ## Uruchomienie
 
 Otwórz `index.html` albo:
