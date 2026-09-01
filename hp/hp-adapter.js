@@ -51,6 +51,7 @@
   function syncDisplay() {
     const calc = window._hpCalc;
     if (!calc || typeof window.hpPaint !== "function") return;
+    if (calc.holdPaint || calc.prgmMode) return;
     const errEl = calc.display.displayElement;
     const raw =
       (errEl && /^Error/i.test(String(errEl.textContent))) || calc._suppressDisplay
@@ -94,6 +95,6 @@
     if (!mapped) return;
     const calc = window.hpInit();
     calc.handleButtonClick(fakeButton(mapped));
-    syncDisplay();
+    if (!calc.holdPaint && !calc.prgmMode) syncDisplay();
   };
 })();

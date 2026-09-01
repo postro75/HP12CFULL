@@ -42,7 +42,8 @@ class Calculator {
         this.pendingDotted = false;
         this.cfReview = 0;
         this.showMantissa = false;
-        
+        this.holdPaint = false;
+
         // References to DOM elements
         this.displayElement = null;
         this.buttons = [];
@@ -99,6 +100,7 @@ class Calculator {
      * @param {HTMLElement} button - Button element
      */
     handleButtonClick(button) {
+        this.holdPaint = false;
         const key = button.dataset.key;
         const primary = button.dataset.primary;
 
@@ -1677,6 +1679,7 @@ class Calculator {
         this.running = false;
         this.cfReview = 0;
         this.showMantissa = false;
+        this.holdPaint = false;
         this.display.setFormat('fixed', 2);
         this.display.setIndicator('f', false);
         this.display.setIndicator('g', false);
@@ -1689,16 +1692,19 @@ class Calculator {
      */
     updateDisplay() {
         if (this.prgmMode) {
+            this.holdPaint = true;
             this.paintProgramLine();
             return;
         }
         if (this.showMantissa) {
             this.showMantissa = false;
+            this.holdPaint = true;
             const raw = this.mantissaString(this.stack.x);
             if (this.display.displayElement) this.display.displayElement.textContent = raw;
             if (typeof window.hpPaint === 'function') window.hpPaint(raw, this);
             return;
         }
+        this.holdPaint = false;
         this.display.show(this.stack.x);
         this.display.setIndicator('c', !!this.financial.compoundOdd);
         const stackDisplay = document.getElementById('stackDisplay');
