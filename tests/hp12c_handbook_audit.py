@@ -43,7 +43,7 @@ def main():
             )
 
         def reset():
-            tap("mode")
+            page.evaluate("() => _hpCalc.reset()")
 
         def check(name, keys, pred, handbook):
             reset()
@@ -230,6 +230,23 @@ def main():
         has_hs("Hotspot R/S", "", "rs", "primary R/S")
         has_hs("Hotspot SST", "", "sst", "primary SST")
         has_hs("Hotspot Σ+", "", "sigma", "primary Σ+")
+        has_hs("Hotspot CLEAR REG (f R↓)", "f", "rdn", "gold CLEAR REG")
+        has_hs("Hotspot PREFIX (f SST)", "f", "sst", "gold PREFIX")
+        has_hs("Hotspot PSE (f x⇄y)", "f", "xy", "gold PSE")
+        has_hs("Hotspot CLEAR Σ (f Σ+)", "f", "sigma", "gold CLEAR Σ")
+
+        check("HB STO+ register arithmetic",
+              ["1","0","sto","1","5","sto","+","1","rcl","1"],
+              lambda s: (eq(s["x"], 15), s["lcd"]),
+              "HB storage register arithmetic")
+        check("HB 12× stores n",
+              ["5","g","n"],
+              lambda s: (eq(s["x"], 60) and eq(s["n"], 60), f"x={s['x']} n={s['n']}"),
+              "HB g 12× stores n-register")
+        check("HB Continuous Memory: ON keeps STO",
+              ["7","sto","2","mode","rcl","2"],
+              lambda s: (eq(s["x"], 7), s["lcd"]),
+              "HB Continuous Memory")
 
         # ── Unimplemented handbook functions: confirm they do NOT pretend to work ──
         def unimplemented(name, keys, handbook):

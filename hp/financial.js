@@ -18,6 +18,8 @@ class FinancialEngine {
     constructor() {
         // Payment timing mode
         this.paymentMode = 'END';  // 'BEGIN' or 'END'
+        // C indicator: compound (true) vs simple (false) interest on odd first period
+        this.compoundOdd = false;
         
         // Newton-Raphson configuration
         this.MAX_ITERATIONS = 200;
@@ -165,16 +167,31 @@ class FinancialEngine {
      * @param {number} fv - Future value
      * @returns {number} Present value
      */
+    splitN(n) {
+        const an = Math.abs(Number(n) || 0);
+        let nInt = Math.floor(an + 1e-12);
+        let frac = an - nInt;
+        if (frac < 1e-10) frac = 0;
+        if (frac > 1 - 1e-10) { nInt += 1; frac = 0; }
+        return { nInt: nInt, frac: frac };
+    }
+
+    oddFactor(i, frac) {
+        if (frac === 0 || Math.abs(i) < this.TOLERANCE) return 1;
+        if (this.compoundOdd) return Math.pow(1 + i, frac);
+        return 1 + i * frac;
+    }
+
     calculatePV(n, i, pmt, fv) {
-        // Special case: zero interest rate
+        const parts = this.splitN(n);
+        const nInt = parts.nInt;
+        const odd = this.oddFactor(i, parts.frac);
         if (Math.abs(i) < this.TOLERANCE) {
             return -(pmt * n + fv);
         }
-        
         const beginFactor = this.paymentMode === 'BEGIN' ? (1 + i) : 1;
-        const discount = Math.pow(1 + i, -n);
-        
-        return -(pmt * (1 - discount) / i * beginFactor + fv * discount);
+        const discount = Math.pow(1 + i, -nInt);
+        return -(pmt * (1 - discount) / i * beginFactor + fv * discount) / odd;
     }
 
     /**
@@ -189,20 +206,18 @@ class FinancialEngine {
      * @returns {number} Payment per period
      */
     calculatePMT(n, i, pv, fv) {
-        // Validation
-        if (n === 0) {
-            throw new Error('Error 5');  // No solution: cannot divide by zero periods
+        const parts = this.splitN(n);
+        const nInt = parts.nInt;
+        const odd = this.oddFactor(i, parts.frac);
+        if (nInt === 0) {
+            throw new Error('Error 5');
         }
-        
-        // Special case: zero interest rate
         if (Math.abs(i) < this.TOLERANCE) {
             return -(pv + fv) / n;
         }
-        
         const beginFactor = this.paymentMode === 'BEGIN' ? (1 + i) : 1;
-        const compound = Math.pow(1 + i, n);
-        
-        return -(pv * i + fv * i / compound) / ((1 - 1/compound) * beginFactor);
+        const compound = Math.pow(1 + i, nInt);
+        return -(pv * odd * i + fv * i / compound) / ((1 - 1 / compound) * beginFactor);
     }
 
     /**
@@ -217,15 +232,15 @@ class FinancialEngine {
      * @returns {number} Future value
      */
     calculateFV(n, i, pv, pmt) {
-        // Special case: zero interest rate
+        const parts = this.splitN(n);
+        const nInt = parts.nInt;
+        const odd = this.oddFactor(i, parts.frac);
         if (Math.abs(i) < this.TOLERANCE) {
             return -(pv + pmt * n);
         }
-        
         const beginFactor = this.paymentMode === 'BEGIN' ? (1 + i) : 1;
-        const compound = Math.pow(1 + i, n);
-        
-        return -(pv * compound + pmt * (compound - 1) / i * beginFactor);
+        const compound = Math.pow(1 + i, nInt);
+        return -(pv * odd * compound + pmt * (compound - 1) / i * beginFactor);
     }
 
     // ============================================
@@ -328,37 +343,14 @@ class FinancialEngine {
         // Initial guess using heuristic
         let i = this.getInitialGuessForI(n, pv, pmt, fv);
         
-        const beginFactor = this.paymentMode === 'BEGIN' ? 1 : 0;
         this.lastIterationCount = 0;
         
         for (let iteration = 0; iteration < this.MAX_ITERATIONS; iteration++) {
             this.lastIterationCount++;
-            
-            const compound = Math.pow(1 + i, n);
-            const discount = 1 / compound;
-            
-            let f, df;
-            
-            // Special handling near i = 0 to avoid division by zero
-            if (Math.abs(i) < this.TOLERANCE) {
-                // Taylor series expansion around i = 0
-                f = pv + pmt * n + fv;
-                df = pmt * n * (n - 1) / 2 - n * fv;
-            } else {
-                const annuityFactor = (compound - 1) / i;
-                const beginMult = 1 + i * beginFactor;
-                
-                // f(i) = PV + PMT × [(1+i)^n - 1]/i × (1+i×BEGIN) + FV/(1+i)^n
-                f = pv + pmt * annuityFactor * beginMult + fv * discount;
-                
-                // Complex derivative calculation
-                // df/di = PMT × BEGIN × annuityFactor + 
-                //         PMT × beginMult × [n × (1+i)^(n-1) / i - annuityFactor / i] / (1+i) -
-                //         n × FV × (1+i)^(-n-1)
-                df = pmt * beginFactor * annuityFactor +
-                     pmt * beginMult * (n * compound / i / (1 + i) - annuityFactor / i) -
-                     n * fv * discount / (1 + i);
-            }
+            const f = this.evaluateTVM(n, i, pv, pmt, fv);
+            const h = Math.max(1e-8, Math.abs(i) * 1e-6);
+            const df = (this.evaluateTVM(n, i + h, pv, pmt, fv) -
+                        this.evaluateTVM(n, i - h, pv, pmt, fv)) / (2 * h);
             
             if (Math.abs(df) < this.TOLERANCE) {
                 // Derivative too small, try bisection method as fallback
@@ -472,18 +464,17 @@ class FinancialEngine {
      * @returns {number} TVM equation result
      */
     evaluateTVM(n, i, pv, pmt, fv) {
+        const parts = this.splitN(n);
+        const nInt = parts.nInt;
+        const odd = this.oddFactor(i, parts.frac);
         const beginFactor = this.paymentMode === 'BEGIN' ? 1 : 0;
-        
         if (Math.abs(i) < this.TOLERANCE) {
-            // Special case: i ≈ 0
-            return pv + pmt * n * (1 + beginFactor * 0) + fv;
+            return pv + pmt * n + fv;
         }
-        
-        const compound = Math.pow(1 + i, n);
+        const compound = Math.pow(1 + i, nInt);
         const annuityFactor = (compound - 1) / i;
         const beginMult = 1 + i * beginFactor;
-        
-        return pv + pmt * annuityFactor * beginMult + fv / compound;
+        return pv * odd + pmt * annuityFactor * beginMult + fv / compound;
     }
 
     // ============================================
@@ -575,6 +566,7 @@ class FinancialEngine {
      */
     reset() {
         this.paymentMode = 'END';
+        this.compoundOdd = false;
         this.lastSolvedVariable = null;
         this.lastIterationCount = 0;
         this.amortization = {

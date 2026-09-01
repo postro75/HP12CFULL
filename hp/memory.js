@@ -108,6 +108,17 @@ class MemoryManager {
         this.registers.fill(0);
     }
 
+    /** f CLEAR Σ — statistics live in R1–R6 (Owner's Handbook §6). */
+    clearSigma() {
+        for (let i = 1; i <= 6; i++) this.registers[i] = 0;
+    }
+
+    /** f CLEAR REG — data + financial, program memory untouched. */
+    clearReg() {
+        this.registers.fill(0);
+        this.clearFinancial();
+    }
+
     /**
      * Clear financial registers (R0-R4)
      */

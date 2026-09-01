@@ -3,6 +3,17 @@
  * Manages 4-level stack (X, Y, Z, T registers) with automatic lift/drop
  */
 
+function hpRound10(x) {
+    if (x === 0) return 0;
+    if (!isFinite(x)) return x;
+    const s = x < 0 ? -1 : 1;
+    const ax = Math.abs(x);
+    const exp = Math.floor(Math.log10(ax) + 1e-12);
+    const scale = Math.pow(10, 9 - exp);
+    return s * Math.round(ax * scale) / scale;
+}
+if (typeof window !== 'undefined') window.hpRound10 = hpRound10;
+
 class RPNStack {
     constructor() {
         this.x = 0;      // Display register
@@ -114,7 +125,7 @@ class RPNStack {
      */
     binaryOp(operation) {
         this.saveLastX();
-        const result = operation(this.y, this.x);
+        const result = hpRound10(operation(this.y, this.x));
         this.drop();
         this.x = result;
         this.stackLift = true;
@@ -127,7 +138,7 @@ class RPNStack {
      */
     unaryOp(operation) {
         this.saveLastX();
-        this.x = operation(this.x);
+        this.x = hpRound10(operation(this.x));
         this.stackLift = true;
         return this.x;
     }

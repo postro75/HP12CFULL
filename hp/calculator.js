@@ -38,6 +38,10 @@ class Calculator {
         this.pendingGto = false;
         this.gtoDigits = '';
         this.running = false;
+        this.pendingArith = null;
+        this.pendingDotted = false;
+        this.cfReview = 0;
+        this.showMantissa = false;
         
         // References to DOM elements
         this.displayElement = null;
@@ -98,6 +102,25 @@ class Calculator {
         const key = button.dataset.key;
         const primary = button.dataset.primary;
 
+        if (this.pendingOperation === 'rcl' && this.prefixG &&
+            (key === 'pv' || key === 'pmt' || key === 'fv')) {
+            this.recallCashFlow(key);
+            this.pendingOperation = null;
+            this.prefixG = false;
+            this.display.setIndicator('g', false);
+            this.updateDisplay();
+            return;
+        }
+        if (this.pendingOperation === 'sto' && this.prefixG &&
+            (key === 'pv' || key === 'pmt' || key === 'fv')) {
+            this.storeCashFlow(key);
+            this.pendingOperation = null;
+            this.prefixG = false;
+            this.display.setIndicator('g', false);
+            this.updateDisplay();
+            return;
+        }
+
         if (this.pendingGto && key.startsWith('digit-')) {
             this.gtoDigits += key.replace('digit-', '');
             if (this.gtoDigits.length >= 2) {
@@ -119,6 +142,13 @@ class Calculator {
         if (this.prgmMode && key !== 'prefix-f' && key !== 'prefix-g' && key !== 'on') {
             if (this.prefixF && key === 'run-stop') {
                 this.prgmMode = false;
+                this.prefixF = false;
+                this.display.setIndicator('f', false);
+                this.updateDisplay();
+                return;
+            }
+            if (this.prefixF && key === 'sum-plus') {
+                this.clearProgram();
                 this.prefixF = false;
                 this.display.setIndicator('f', false);
                 this.updateDisplay();
@@ -250,7 +280,16 @@ class Calculator {
                 break;
                 
             case 'on':
-                this.reset();
+                // Continuous Memory: ON does not wipe registers or program.
+                this.prefixF = false;
+                this.prefixG = false;
+                this.pendingOperation = null;
+                this.pendingArith = null;
+                this.pendingDotted = false;
+                this.eexActive = false;
+                this._suppressDisplay = false;
+                this.display.setIndicator('f', false);
+                this.display.setIndicator('g', false);
                 break;
             
             // Math functions
@@ -370,6 +409,22 @@ class Calculator {
             case 'run-stop':  // f R/S = P/R
                 this.prgmMode = true;
                 this.pc = this.program.length;
+                break;
+            case 'sst':  // f SST = CLEAR PREFIX + mantissa
+                this.clearPrefixKeys();
+                this.showMantissa = true;
+                break;
+            case 'roll-down':  // f R↓ = CLEAR REG
+                this.clearReg();
+                break;
+            case 'swap-xy':  // f x⇄y = PSE
+                this.pauseProgram();
+                break;
+            case 'sum-plus':  // f Σ+ = CLEAR Σ
+                this.memory.clearSigma();
+                break;
+            case 'decimal':  // f · = SCI
+                this.display.setFormat('sci');
                 break;
             default:
                 console.log('Unimplemented gold function:', key);
@@ -493,6 +548,10 @@ class Calculator {
                 this.gtoDigits = '';
                 break;
 
+            case 'sst':  // g SST = BST
+                this.bstRun();
+                break;
+
             default:
                 console.log('Unimplemented blue function:', key);
         }
@@ -503,18 +562,48 @@ class Calculator {
      * @param {string} digit - Digit to enter (0-9)
      */
     enterDigit(digit) {
-        // Handle pending operations (STO/RCL)
-        if (this.pendingOperation === 'sto') {
-            const registerNum = parseInt(digit);
-            this.storeRegister(registerNum);
+        if (this.pendingOperation === 'sto' || this.pendingOperation === 'rcl') {
+            let registerNum = parseInt(digit, 10);
+            if (this.pendingDotted) registerNum += 10;
+            if (this.pendingArith) {
+                if (registerNum > 4 && !this.pendingDotted) {
+                    this.display.showError('Error 3');
+                    this.pendingOperation = null;
+                    this.pendingArith = null;
+                    this.pendingDotted = false;
+                    return;
+                }
+                if (this.pendingOperation === 'sto') {
+                    const ok = this.memory[this.pendingArith](registerNum, this.stack.x);
+                    if (!ok) this.display.showError('Error 0');
+                } else {
+                    const mem = this.memory.recall(registerNum);
+                    const x = this.stack.x;
+                    const ops = {
+                        add: (a, b) => a + b,
+                        subtract: (a, b) => a - b,
+                        multiply: (a, b) => a * b,
+                        divide: (a, b) => a / b,
+                    };
+                    if (this.pendingArith === 'divide' && mem === 0) {
+                        this.display.showError('Error 0');
+                    } else {
+                        this.stack.saveLastX();
+                        this.stack.x = (window.hpRound10 || ((v) => v))(ops[this.pendingArith](x, mem));
+                        this.stack.stackLift = true;
+                    }
+                }
+            } else if (this.pendingOperation === 'sto') {
+                this.storeRegister(registerNum);
+            } else {
+                this.recallRegister(registerNum);
+            }
+            const wasRcl = this.pendingOperation === 'rcl' && !this.pendingArith;
             this.pendingOperation = null;
-            return;
-        }
-        
-        if (this.pendingOperation === 'rcl') {
-            const registerNum = parseInt(digit);
-            this.recallRegister(registerNum);
-            this.pendingOperation = null;
+            this.pendingArith = null;
+            this.pendingDotted = false;
+            this.isNewNumber = true;
+            this.tvmStoreNext = wasRcl;
             return;
         }
 
@@ -542,6 +631,10 @@ class Calculator {
      * Enter decimal point
      */
     enterDecimal() {
+        if (this.pendingOperation === 'sto' || this.pendingOperation === 'rcl') {
+            this.pendingDotted = true;
+            return;
+        }
         if (this.isNewNumber) {
             if (this.stack.stackLift) this.stack.lift();
             this.currentInput = "0.";
@@ -833,7 +926,9 @@ class Calculator {
         this.finishNumberEntry();
         this.stack.saveLastX();
         this.stack.x = this.math.multiply12(this.stack.x);
+        this.memory.setFinancialRegister('n', this.stack.x);
         this.isNewNumber = true;
+        this.tvmStoreNext = false;
     }
 
     /**
@@ -843,7 +938,9 @@ class Calculator {
         this.finishNumberEntry();
         this.stack.saveLastX();
         this.stack.x = this.math.divide12(this.stack.x);
+        this.memory.setFinancialRegister('i', this.stack.x);
         this.isNewNumber = true;
+        this.tvmStoreNext = false;
     }
 
     /**
@@ -887,6 +984,28 @@ class Calculator {
         if (this.pendingOperation !== 'sto' && this.pendingOperation !== 'rcl') {
             return false;
         }
+        if (this.pendingOperation === 'sto' && key === 'eex') {
+            this.financial.compoundOdd = !this.financial.compoundOdd;
+            this.pendingOperation = null;
+            this.pendingArith = null;
+            this.pendingDotted = false;
+            this.tvmStoreNext = false;
+            return true;
+        }
+        const ops = {
+            'op-add': 'add',
+            'op-subtract': 'subtract',
+            'op-multiply': 'multiply',
+            'op-divide': 'divide',
+        };
+        if (key in ops) {
+            this.pendingArith = ops[key];
+            return true;
+        }
+        if (key === 'decimal') {
+            this.pendingDotted = true;
+            return true;
+        }
         const finMap = { n: 0, i: 1, pv: 2, pmt: 3, fv: 4 };
         if (!(key in finMap)) {
             return false;
@@ -903,6 +1022,8 @@ class Calculator {
             this.tvmStoreNext = true;
         }
         this.pendingOperation = null;
+        this.pendingArith = null;
+        this.pendingDotted = false;
         return true;
     }
 
@@ -956,10 +1077,8 @@ class Calculator {
                         break;
                 }
                 
-                // Store result in register
+                if (typeof window.hpRound10 === 'function') result = window.hpRound10(result);
                 this.memory.setFinancialRegister(register, result);
-                
-                // Push to stack and display
                 this.stack.x = result;
                 this.isNewNumber = true;
                 this.currentInput = '';
@@ -1411,18 +1530,139 @@ class Calculator {
         this.isNewNumber = true;
     }
 
+    keycodeOf(key) {
+        const map = {
+            n: 11, i: 12, pv: 13, pmt: 14, fv: 15, chs: 16,
+            'digit-7': 7, 'digit-8': 8, 'digit-9': 9, 'op-divide': 10,
+            'power-yx': 21, reciprocal: 22, 'percent-total': 23,
+            'delta-percent': 24, percent: 25, eex: 26,
+            'digit-4': 4, 'digit-5': 5, 'digit-6': 6, 'op-multiply': 20,
+            'run-stop': 31, sst: 32, 'roll-down': 33, 'swap-xy': 34, clx: 35, enter: 36,
+            'digit-1': 1, 'digit-2': 2, 'digit-3': 3, 'op-subtract': 30,
+            on: 41, 'prefix-f': 42, 'prefix-g': 43, sto: 44, rcl: 45,
+            'digit-0': 0, decimal: 48, 'sum-plus': 49, 'op-add': 40,
+        };
+        return map[key] != null ? map[key] : 0;
+    }
+
+    mantissaString(value) {
+        if (!isFinite(value) || value === 0) return '0.000000000';
+        const s = value < 0 ? '-' : '';
+        const ax = Math.abs(value);
+        const exp = Math.floor(Math.log10(ax) + 1e-12);
+        const mant = ax / Math.pow(10, exp);
+        let digits = mant.toFixed(9).replace('.', '');
+        return s + digits.charAt(0) + '.' + digits.slice(1);
+    }
+
+    paintProgramLine() {
+        const line = Math.min(this.pc, this.program.length);
+        const step = this.program[Math.max(0, line - 1)] || this.program[0];
+        let code = '00';
+        if (step) {
+            const k = this.keycodeOf(step.key);
+            if (step.f) code = '42,' + String(k).padStart(2, '0');
+            else if (step.g) code = '43,' + String(k).padStart(2, '0');
+            else code = String(k).padStart(2, '0');
+        }
+        const raw = String(line).padStart(2, '0') + '-' + code;
+        if (this.display.displayElement) this.display.displayElement.textContent = raw;
+        if (typeof window.hpPaint === 'function') window.hpPaint(raw, this);
+    }
+
+    clearPrefixKeys() {
+        this.prefixF = false;
+        this.prefixG = false;
+        this.pendingOperation = null;
+        this.pendingArith = null;
+        this.pendingDotted = false;
+        this.pendingGto = false;
+        this.gtoDigits = '';
+        this.display.setIndicator('f', false);
+        this.display.setIndicator('g', false);
+    }
+
+    clearReg() {
+        this.memory.clearReg();
+        this.stack.reset();
+        this.financial.compoundOdd = false;
+        this.currentInput = '';
+        this.isNewNumber = true;
+        this.hasDecimal = false;
+        this.tvmStoreNext = false;
+        this.cfReview = 0;
+        this.clearPrefixKeys();
+    }
+
+    clearProgram() {
+        this.program = [];
+        this.pc = 0;
+    }
+
+    pauseProgram() {
+        if (this.running) this.running = false;
+    }
+
+    bstRun() {
+        if (this.prgmMode) {
+            this.pc = Math.max(0, this.pc - 1);
+            return;
+        }
+        if (!this.program.length) return;
+        this.pc = Math.max(0, this.pc - 1);
+    }
+
+    recallCashFlow(which) {
+        const cfs = this.memory.cashFlows || [];
+        if (!cfs.length) {
+            this.display.showError('Error 6');
+            return;
+        }
+        if (which === 'pv') {
+            this.cfReview = 0;
+            this.stack.push(cfs[0].amount);
+            this.memory.financial.n = 0;
+        } else if (which === 'pmt') {
+            this.cfReview = Math.min(this.cfReview + 1, cfs.length - 1);
+            this.stack.push(cfs[this.cfReview].amount);
+            this.memory.financial.n = this.cfReview;
+        } else {
+            const idx = Math.max(1, this.cfReview);
+            const nj = (cfs[idx] && cfs[idx].nj) || 1;
+            this.stack.push(nj);
+        }
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
+    }
+
+    storeCashFlow(which) {
+        const cfs = this.memory.cashFlows || [];
+        if (which === 'pv') this.memory.setCF0(this.stack.x);
+        else if (which === 'pmt') {
+            if (this.cfReview > 0 && cfs[this.cfReview]) cfs[this.cfReview].amount = this.stack.x;
+            else this.memory.appendCFj(this.stack.x);
+        } else {
+            this.memory.setLastNj(this.stack.x);
+        }
+        this.isNewNumber = true;
+        this.tvmStoreNext = false;
+    }
+
     /**
      * Reset calculator
      */
     reset() {
         this.stack.reset();
         this.memory.reset();
+        this.financial.reset();
         this.currentInput = '';
         this.isNewNumber = true;
         this.hasDecimal = false;
         this.prefixF = false;
         this.prefixG = false;
         this.pendingOperation = null;
+        this.pendingArith = null;
+        this.pendingDotted = false;
         this.tvmStoreNext = false;
         this.dmyMode = false;
         this.eexActive = false;
@@ -1431,19 +1671,36 @@ class Calculator {
         this.skipNext = false;
         this.pendingGto = false;
         this.gtoDigits = '';
+        this.prgmMode = false;
+        this.program = [];
+        this.pc = 0;
+        this.running = false;
+        this.cfReview = 0;
+        this.showMantissa = false;
         this.display.setFormat('fixed', 2);
         this.display.setIndicator('f', false);
         this.display.setIndicator('g', false);
-        console.log('Calculator reset');
+        this.display.setIndicator('begin', false);
+        this.display.setIndicator('c', false);
     }
 
     /**
      * Update display with current value
      */
     updateDisplay() {
+        if (this.prgmMode) {
+            this.paintProgramLine();
+            return;
+        }
+        if (this.showMantissa) {
+            this.showMantissa = false;
+            const raw = this.mantissaString(this.stack.x);
+            if (this.display.displayElement) this.display.displayElement.textContent = raw;
+            if (typeof window.hpPaint === 'function') window.hpPaint(raw, this);
+            return;
+        }
         this.display.show(this.stack.x);
-        
-        // Update stack display if visible
+        this.display.setIndicator('c', !!this.financial.compoundOdd);
         const stackDisplay = document.getElementById('stackDisplay');
         if (stackDisplay && stackDisplay.style.display !== 'none') {
             this.display.updateStackDisplay(this.stack.getState());

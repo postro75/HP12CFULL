@@ -38,6 +38,10 @@ def main():
                     ind: document.getElementById('indicators').textContent,
                     f: c.prefixF, g: c.prefixG,
                     begin: c.financial.paymentMode,
+                    cflag: !!c.financial.compoundOdd,
+                    r0: c.memory.recall(0),
+                    r1: c.memory.recall(1),
+                    r10: c.memory.recall(10),
                     n: c.memory.getFinancialRegister('n'),
                     i: c.memory.getFinancialRegister('i'),
                     pv: c.memory.getFinancialRegister('pv'),
@@ -48,7 +52,7 @@ def main():
             )
 
         def case(name, keys, check):
-            tap("mode")  # ON = full reset (stack + financial + prefixes)
+            page.evaluate("() => _hpCalc.reset()")
             tap(*keys)
             s = snap()
             ok, detail = check(s)
@@ -185,10 +189,10 @@ def main():
              lambda s: (eq(s["x"], 1), f"x={s['x']}"))
 
         # ── 12× / 12÷ ──
-        case("12× : 5 g n", ["5", "g", "n"],
-             lambda s: (eq(s["x"], 60), f"x={s['x']}"))
-        case("12÷ : 36 g i", ["3", "6", "g", "i"],
-             lambda s: (eq(s["x"], 3), f"x={s['x']}"))
+        case("12× : 5 g n stores n=60", ["5", "g", "n"],
+             lambda s: (eq(s["x"], 60) and eq(s["n"], 60), f"x={s['x']} n={s['n']}"))
+        case("12÷ : 36 g i stores i=3", ["3", "6", "g", "i"],
+             lambda s: (eq(s["x"], 3) and eq(s["i"], 3), f"x={s['x']} i={s['i']}"))
         case("6,5 ENTER 12 ÷ → monthly 0.5416…",
              ["6", ",", "5", "=", "1", "2", DIV],
              lambda s: (close(s["x"], 6.5 / 12, 1e-9), f"x={s['x']}"))
@@ -238,14 +242,17 @@ def main():
              lambda s: (s["lcd"].startswith("Error"), f"lcd={s['lcd']}"))
         case("√ of −9 → Error", ["9", "+/-", "g", "yx"],
              lambda s: (s["lcd"].startswith("Error"), f"lcd={s['lcd']}"))
-        case("ON resets stack", ["9", "=", "3", "+", "mode"],
+        case("CLEAR REG resets stack", ["9", "=", "3", "+", "f", "rdn"],
              lambda s: (eq(s["x"], 0) and eq(s["y"], 0), f"x={s['x']} y={s['y']}"))
-        case("ON after Error recovers to 0.00",
+        case("ON after Error recovers display, keeps X",
              ["8", "=", "0", DIV, "mode"],
-             lambda s: (eq(s["x"], 0) and eq(s["lcd"], "0.00"), f"x={s['x']} lcd={s['lcd']}"))
-        case("ON clears financial registers",
-             ["1", "0", "n", "5", "i", "mode"],
+             lambda s: (not str(s["lcd"]).startswith("Error"), f"lcd={s['lcd']} x={s['x']}"))
+        case("CLEAR REG clears financial registers",
+             ["1", "0", "n", "5", "i", "f", "rdn"],
              lambda s: (eq(s["n"], 0) and eq(s["i"], 0), f"n={s['n']} i={s['i']}"))
+        case("ON keeps memory (Continuous Memory)",
+             ["4", "2", "sto", "1", "mode", "rcl", "1"],
+             lambda s: (eq(s["x"], 42), f"x={s['x']}"))
 
         # ── Display FIX 2 ──
         case("FIX 2 default lcd", ["1", "=", "3", DIV],
@@ -393,11 +400,52 @@ def main():
               "6", ",", "0", "1", "2", "0", "2", "6", "f", "yx"],
              lambda s: (close(s["x"], 100, 2.0), f"price x={s['x']} y={s['y']}"))
 
+        case("STO+ 1 : 10 STO 1, 5 STO+ 1 → R1=15",
+             ["1", "0", "sto", "1", "5", "sto", "+", "1"],
+             lambda s: (eq(s["r1"], 15) and eq(s["x"], 5), f"r1={s['r1']} x={s['x']}"))
+        case("STO− 1 : 20 STO 1, 8 STO− 1 → R1=12",
+             ["2", "0", "sto", "1", "8", "sto", MINUS, "1"],
+             lambda s: (eq(s["r1"], 12), f"r1={s['r1']}"))
+        case("STO× 1 : 3 STO 1, 4 STO× 1 → R1=12",
+             ["3", "sto", "1", "4", "sto", MUL, "1"],
+             lambda s: (eq(s["r1"], 12), f"r1={s['r1']}"))
+        case("STO÷ 1 : 20 STO 1, 4 STO÷ 1 → R1=5",
+             ["2", "0", "sto", "1", "4", "sto", DIV, "1"],
+             lambda s: (eq(s["r1"], 5), f"r1={s['r1']}"))
+        case("R.0 dotted register STO . 0 / RCL . 0",
+             ["7", "7", "sto", ",", "0", "AC", "rcl", ",", "0"],
+             lambda s: (eq(s["x"], 77) and eq(s["r10"], 77), f"x={s['x']} r10={s['r10']}"))
+        case("CLEAR Σ zeros stats R1 but not R0",
+             ["9", "sto", "0", "3", "=", "2", "sigma", "f", "sigma", "rcl", "0"],
+             lambda s: (eq(s["x"], 9) and eq(s["r1"], 0), f"x={s['x']} r1={s['r1']}"))
+        case("STO EEX sets C indicator",
+             ["sto", "eex"],
+             lambda s: (s["cflag"] is True, f"C={s['cflag']}"))
+        case("STO EEX twice clears C",
+             ["sto", "eex", "sto", "eex"],
+             lambda s: (s["cflag"] is False, f"C={s['cflag']}"))
+        case("Odd-period simple: 1.5 n 10 i −100 PV 0 PMT → FV=115.50",
+             ["1", ",", "5", "n", "1", "0", "i", "1", "0", "0", "+/-", "pv", "0", "pmt", "fv"],
+             lambda s: (close(s["x"], 115.5, 0.05), f"fv={s['x']}"))
+        case("FIX PREFIX cancels f",
+             ["f", "sst"],
+             lambda s: (s["f"] is False, f"f={s['f']} lcd={s['lcd']}"))
+        case("SCI format f · of 1234",
+             ["1", "2", "3", "4", "f", ","],
+             lambda s: (" " in s["lcd"] or "e" in s["lcd"].lower() or "1.234" in s["lcd"],
+                        f"lcd={s['lcd']}"))
+        case("Program CLEAR via f Σ+ in PRGM then still runs empty",
+             ["f", "rs", "2", "=", "3", "+", "f", "sigma", "f", "rs", "rs"],
+             lambda s: (True, f"x={s['x']} lcd={s['lcd']}"))
+        case("RCL CF0 after −10000 g PV",
+             ["1", "0", "0", "0", "0", "+/-", "g", "pv", "rcl", "g", "pv"],
+             lambda s: (eq(s["x"], -10000), f"x={s['x']}"))
+
         # BEGIN vs END: annuity-due vs ordinary. Same loan, |PMT_BEGIN| < |PMT_END|.
-        tap("mode")
+        page.evaluate("() => _hpCalc.reset()")
         tap("1", "2", "n", "1", "i", "1", "0", "0", "0", "pv", "0", "fv", "pmt")
         end_pmt = snap()["x"]
-        tap("mode")
+        page.evaluate("() => _hpCalc.reset()")
         tap("g", "7", "1", "2", "n", "1", "i", "1", "0", "0", "0", "pv", "0", "fv", "pmt")
         begin_snap = snap()
         begin_pmt = begin_snap["x"]

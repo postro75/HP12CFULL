@@ -58,7 +58,7 @@ def main():
             return page.locator("#indicators").inner_text()
 
         # ── arithmetic via photo ──
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("2")
         click_hs("=")
         click_hs("3")
@@ -73,14 +73,14 @@ def main():
         click_hs("+/-")
         ok("CHS hotspot → negative", lcd().startswith("-"), lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("4")
         click_hs("=")
         click_hs("2")
         click_hs("÷")
         ok("click 4 ENTER 2 ÷ → 2.00", lcd() == "2.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         for k in "125":
             click_hs(k)
         click_hs("=")
@@ -89,24 +89,24 @@ def main():
         click_hs("+")
         ok("handbook 125 ENTER 375 + → 500.00", lcd() == "500.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("7")
         click_hs("=")
         ok("ENTER dup on photo: 7 ENTER lcd 7.00", lcd() == "7.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("9")
         click_hs("recip")
         ok("1/x hotspot of 9 → 0.11", lcd() == "0.11", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("2")
         click_hs("=")
         click_hs("8")
         click_hs("yx")
         ok("y^x hotspot 2 ENTER 8 → 256.00", lcd() == "256.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("1")
         click_hs("4")
         click_hs("4")
@@ -114,7 +114,7 @@ def main():
         click_hs("yx")
         ok("g √x via photo 144 → 12.00", lcd() == "12.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("2")
         click_hs("0")
         click_hs("0")
@@ -124,7 +124,7 @@ def main():
         click_hs("%")
         ok("% hotspot 200 ENTER 15 → 30.00", lcd() == "30.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("2")
         click_hs("0")
         click_hs("0")
@@ -134,7 +134,7 @@ def main():
         click_hs("pctt")
         ok("%T hotspot 200 ENTER 50 → 25.00", lcd() == "25.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("4")
         click_hs("2")
         click_hs("sto")
@@ -144,7 +144,7 @@ def main():
         click_hs("1")
         ok("STO 1 / RCL 1 via photo → 42.00", lcd() == "42.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("2")
         click_hs("=")
         click_hs("9")
@@ -152,7 +152,7 @@ def main():
         ok("x⇄y hotspot 2 ENTER 9 → 2.00", lcd() == "2.00", lcd())
 
         # ── TVM via photo (loan n) ──
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         for k in "10000":
             click_hs(k)
         click_hs("pv")
@@ -167,7 +167,7 @@ def main():
         click_hs("n")
         ok("TVM n via photo 10000 PV 1 i −300 PMT 0 FV → 41.00", lcd() == "41.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("4")
         click_hs("8")
         click_hs("n")
@@ -183,7 +183,7 @@ def main():
         ok("TVM PMT via photo 48 n 1 i 10000 PV → ≈ −263.34",
            pmt_lcd.startswith("-263."), pmt_lcd)
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("6")
         click_hs(",")
         click_hs("5")
@@ -196,7 +196,7 @@ def main():
         ok("6,5 ENTER 12 ÷ i stores 6.5/12 via photo",
            abs(float(i_stored) - 6.5 / 12) < 1e-9, str(i_stored))
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         for k in "10000":
             click_hs(k)
         click_hs("+/-")
@@ -218,7 +218,7 @@ def main():
         ok("NPV via photo −10000 CF0 4000 CFj 4 Nj 10 i → ≈ 2679.46",
            npv_lcd.replace(",", "").startswith("2679."), npv_lcd)
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("1")
         click_hs(",")
         click_hs("2")
@@ -227,7 +227,7 @@ def main():
         click_hs("pmt", prefix="f")
         ok("RND gold label rounds 1,239 to 1.24", lcd() == "1.24", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         for k in "10000":
             click_hs(k)
         click_hs("+/-")
@@ -246,7 +246,7 @@ def main():
            irr_lcd.replace(",", "").startswith("21.8") or irr_lcd.replace(",", "").startswith("21.9"),
            irr_lcd)
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("6")
         click_hs("0")
         click_hs("n")
@@ -259,7 +259,7 @@ def main():
         click_hs("i", prefix="f")
         ok("INT gold label 60d 7% 450 → 5.25", lcd() == "5.25", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("1")
         click_hs("0")
         click_hs("n")
@@ -267,7 +267,7 @@ def main():
         nreg = page.evaluate("() => _hpCalc.memory.getFinancialRegister('n')")
         ok("CLEAR FIN gold label zeros n", nreg == 0, str(nreg))
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("rs", prefix="f")
         click_hs("2")
         click_hs("=")
@@ -277,7 +277,7 @@ def main():
         click_hs("rs")
         ok("P/R program 2 ENTER 3 + R/S → 5.00", lcd() == "5.00", lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("g")
         click_hs("7")
         ok("BEGIN via g 7 on photo", "BEGIN" in ind().upper() or "BEG" in ind().upper()
@@ -306,18 +306,18 @@ def main():
                 and box["x"] + box["width"] < face["x"] + face["width"]),
            f"lcd={box} face={face}")
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("f")
         ok("f prefix shows on LCD", "f" in ind().lower() or "f" in ind(), f"ind={ind()!r}")
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("8")
         click_hs("=")
         click_hs("0")
         click_hs("÷")
         ok("÷0 via photo shows Error", lcd().startswith("Error"), lcd())
 
-        page.evaluate("() => CasioCalc.press('mode')")
+        click_hs("mode")
         ok("ON (mode) hotspot recovers to 0.00", lcd() == "0.00", lcd())
 
         # ── Casio isolation via UX model switch ──
@@ -353,7 +353,7 @@ def main():
             """() => getComputedStyle(document.querySelector('.pad')).display"""
         )
         ok("algebra pad hidden again on HP", pad2 == "none", pad2)
-        page.evaluate("() => CasioCalc.press('mode')")
+        page.evaluate("() => _hpCalc.reset()")
         click_hs("2")
         click_hs("=")
         click_hs("3")

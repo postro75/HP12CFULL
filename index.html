@@ -621,7 +621,12 @@
           <button type="button" class="hs" data-prefix="f" data-key="dlt" aria-label="SOYD" style="left:33.30%;top:48.35%;width:7.20%;height:3.65%;"></button>
           <button type="button" class="hs" data-prefix="f" data-key="%" aria-label="DB" style="left:42.23%;top:48.35%;width:7.20%;height:3.65%;"></button>
           <button type="button" class="hs" data-prefix="f" data-key="rs" aria-label="P/R" style="left:6.50%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="sst" aria-label="CLEAR PREFIX" style="left:15.43%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="rdn" aria-label="CLEAR REG" style="left:24.37%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="xy" aria-label="PSE" style="left:33.30%;top:64.25%;width:7.20%;height:3.65%;"></button>
           <button type="button" class="hs" data-prefix="f" data-key="AC" aria-label="CLEAR FIN" style="left:42.23%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="sigma" aria-label="CLEAR SIGMA" style="left:77.97%;top:80.80%;width:7.20%;height:3.00%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="," aria-label="SCI" style="left:69.03%;top:80.80%;width:7.20%;height:3.00%;"></button>
           <button type="button" class="hs" data-key="n" aria-label="n" style="left:6.50%;top:36.15%;width:7.20%;height:12.05%;"></button>
           <button type="button" class="hs" data-key="i" aria-label="i" style="left:15.43%;top:36.15%;width:7.20%;height:12.05%;"></button>
           <button type="button" class="hs" data-key="pv" aria-label="PV" style="left:24.37%;top:36.15%;width:7.20%;height:12.05%;"></button>
@@ -913,6 +918,8 @@
       if (calc && calc.prefixF) bits.push("f");
       if (calc && calc.prefixG) bits.push("g");
       if (calc && calc.financial && calc.financial.paymentMode === "BEGIN") bits.push("BEGIN");
+      if (calc && calc.financial && calc.financial.compoundOdd) bits.push("C");
+      if (calc && calc.prgmMode) bits.push("PRGM");
       indicatorsEl.textContent = bits.join(" ");
     };
 
