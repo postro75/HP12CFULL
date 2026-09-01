@@ -22,6 +22,7 @@ E2E:
 
 ```bash
 python3 tests/hp12c_78.py       # 78 operacji z indeksów Owner's Handbook 1992
+python3 tests/hp12c_human.py    # klawiatura laptopa + kliki w zdjęcie (Vercel)
 python3 tests/hp12c_engine.py   # HP-12C RPN/TVM silnik
 python3 tests/hp12c_ux.py       # hotspoty na zdjęciu HP12C.png
 python3 tests/e2e_liczy.py      # Casio algebra L→P
