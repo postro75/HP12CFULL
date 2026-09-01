@@ -363,6 +363,54 @@ def main():
         title = page.evaluate("() => document.title")
         ok("page title exists", bool(title), title)
 
+        # ── visible model switcher ──
+        page.goto(BASE, wait_until="networkidle")
+        switcher = page.locator(".models")
+        ok("model switcher visible on web", switcher.is_visible())
+        ok("three model buttons", page.locator(".models [data-model]").count() == 3)
+
+        page.locator('.models [data-model="hp12c"]').click()
+        page.wait_for_timeout(150)
+        bg4 = page.evaluate(
+            """() => getComputedStyle(document.querySelector('.face')).backgroundImage"""
+        )
+        ok("click HP-12C loads photo", "HP12C.png" in bg4, bg4[:120])
+        ok(
+            "URL gets ?model=hp12c",
+            "model=hp12c" in page.url,
+            page.url,
+        )
+        ok(
+            "HP button is selected",
+            page.locator('.models [data-model="hp12c"]').get_attribute("aria-checked")
+            == "true",
+        )
+        title_hp = page.evaluate("() => document.title")
+        ok("title becomes HP-12C", "HP-12C" in title_hp, title_hp)
+
+        page.locator('.models [data-model="casio"]').click()
+        page.wait_for_timeout(80)
+        pad3 = page.evaluate(
+            """() => getComputedStyle(document.querySelector('.pad')).display"""
+        )
+        ok("click Casio restores pad", pad3 != "none", pad3)
+        ok(
+            "Casio URL drops model param",
+            "model=" not in page.url.split("?")[-1] if "?" in page.url else True,
+            page.url,
+        )
+
+        page.goto(BASE + "?model=hp12c", wait_until="networkidle")
+        page.wait_for_timeout(150)
+        bg5 = page.evaluate(
+            """() => getComputedStyle(document.querySelector('.face')).backgroundImage"""
+        )
+        ok("?model=hp12c boots HP photo", "HP12C.png" in bg5, bg5[:120])
+        pad4 = page.evaluate(
+            """() => getComputedStyle(document.querySelector('.pad')).display"""
+        )
+        ok("?model=hp12c hides algebra pad", pad4 == "none", pad4)
+
         browser.close()
 
     failed = [r for r in results if not r["ok"]]

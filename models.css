@@ -5,6 +5,10 @@ html[data-model="hp12c"].app body {
   background: #1a1814;
 }
 
+html[data-model="hp12c"] .stage {
+  width: min(100%, 920px);
+}
+
 html[data-model="hp12c"] .calc {
   background: linear-gradient(180deg, #2a281f 0%, #141310 100%);
   border-radius: 10px;
@@ -323,5 +327,7 @@ html[data-model="ti30xa"] button[data-key="AC"] {
   color: #222;
 }
 
-html[data-model="hp12c"] .hint,
-html[data-model="ti30xa"] .hint { display: none; }
+html[data-model="hp12c"] .models button[aria-checked="true"] {
+  background: linear-gradient(180deg, #e8d39a, #c4a45a);
+  color: #1a1408;
+}

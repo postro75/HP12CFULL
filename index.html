@@ -449,6 +449,47 @@
       text-shadow: 0 1px 2px rgba(0,0,0,.6);
     }
 
+    .models {
+      display: flex;
+      width: 100%;
+      padding: 4px;
+      gap: 4px;
+      border-radius: 999px;
+      background: rgba(8, 8, 10, .55);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        0 8px 20px rgba(0,0,0,.28);
+    }
+    .models button {
+      flex: 1;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      color: rgba(255,255,255,.72);
+      font: 650 11px/1.2 Inter, system-ui, sans-serif;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 10px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .models button:hover {
+      color: #fff;
+    }
+    .models button[aria-checked="true"] {
+      background: linear-gradient(180deg, #f6de9a 0%, #d4a017 100%);
+      color: #1a1408;
+      box-shadow:
+        0 1px 0 #8a6508,
+        inset 0 1px 0 rgba(255,255,255,.45);
+    }
+    .models button:focus-visible {
+      outline: 2px solid #d4a017;
+      outline-offset: 2px;
+    }
+
     html.app,
     html.app body {
       width: 100%;
@@ -460,7 +501,8 @@
       display: block;
       background: #141518;
     }
-    html.app .hint { display: none; }
+    html.app .hint,
+    html.app .models { display: none; }
     html.app .stage {
       width: 100%;
       height: 100%;
@@ -508,6 +550,11 @@
 </head>
 <body>
   <div class="stage">
+    <nav class="models" role="radiogroup" aria-label="Model kalkulatora">
+      <button type="button" role="radio" aria-checked="true" aria-label="Casio SL-300" data-model="casio">Casio</button>
+      <button type="button" role="radio" aria-checked="false" aria-label="HP-12C" data-model="hp12c">HP-12C</button>
+      <button type="button" role="radio" aria-checked="false" aria-label="TI-30Xa" data-model="ti30xa">TI-30Xa</button>
+    </nav>
     <div class="calc" role="application" aria-label="Kalkulator Casio">
       <div class="face">
         <div class="solar-row">
@@ -943,6 +990,27 @@
       ti30xa: { logo: "TEXAS INSTRUMENTS", model: "TI-30Xa" },
     };
 
+    const TITLES = {
+      casio: "CASIO SL-300 · Kalkulator",
+      hp12c: "HP-12C · Kalkulator",
+      ti30xa: "TI-30Xa · Kalkulator",
+    };
+    const HINTS = {
+      casio: "Przecinek dziesiętny · klawiatura działa · CASIO 3D silver",
+      hp12c: "RPN · ENTER · n i PV PMT FV · f/g",
+      ti30xa: "Algebra · ON/C · klawiatura działa",
+    };
+
+    function syncModelUrl(model) {
+      if (document.documentElement.classList.contains("app")) return;
+      try {
+        const url = new URL(location.href);
+        if (model === "casio") url.searchParams.delete("model");
+        else url.searchParams.set("model", model);
+        history.replaceState(null, "", url.pathname + url.search + url.hash);
+      } catch (_) {}
+    }
+
     function setModel(model) {
       if (!LABELS[model]) model = "casio";
       document.documentElement.setAttribute("data-model", model);
@@ -962,15 +1030,27 @@
       if (mod) mod.textContent = BRAND[model].model;
       const calc = document.querySelector(".calc");
       if (calc) calc.setAttribute("aria-label", BRAND[model].logo + " " + BRAND[model].model);
+      document.querySelectorAll(".models [data-model]").forEach((btn) => {
+        btn.setAttribute("aria-checked", btn.dataset.model === model ? "true" : "false");
+      });
+      const hint = document.querySelector(".hint");
+      if (hint) hint.textContent = HINTS[model] || HINTS.casio;
+      document.title = TITLES[model] || TITLES.casio;
+      syncModelUrl(model);
       if (model === "hp12c" && typeof window.hpInit === "function") window.hpInit();
       render();
     }
 
+    document.querySelectorAll(".models [data-model]").forEach((btn) => {
+      btn.addEventListener("click", () => setModel(btn.dataset.model));
+    });
+
     window.CasioCalc = { press, getState: () => ({ ...state }), render, setTheme, setModel };
-    if (document.documentElement.getAttribute("data-model") === "hp12c" && typeof window.hpInit === "function") {
-      window.hpInit();
-    }
-    render();
+    let bootModel = "casio";
+    try {
+      bootModel = new URLSearchParams(location.search).get("model") || "casio";
+    } catch (_) {}
+    setModel(bootModel);
   </script>
 </body>
 </html>
