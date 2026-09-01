@@ -1587,7 +1587,10 @@ class Calculator {
     }
 
     pauseProgram() {
-        if (this.running) this.running = false;
+        // Handbook PSE: terminate digit entry, show X ~1s, continue. Do not abort R/S.
+        this.finishNumberEntry();
+        this.isNewNumber = true;
+        this.tvmStoreNext = true;
     }
 
     bstRun() {
