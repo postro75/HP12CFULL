@@ -5,17 +5,17 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>pl</string>
   <key>CFBundleExecutable</key>
-  <string>CasioSL300</string>
+  <string>HP12CFULL</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
-  <string>pl.postro75.casio-sl300</string>
+  <string>pl.postro75.hp12cfull</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>CASIO SL-300</string>
+  <string>HP12CFULL</string>
   <key>CFBundleDisplayName</key>
-  <string>CASIO SL-300</string>
+  <string>HP12CFULL</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

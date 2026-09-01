@@ -30,11 +30,17 @@ python3 tests/e2e_liczy.py      # Casio algebra L→P
 
 Klawiatura laptopa działa (`Enter`, `Escape`, `*`, `/`, `.`). Na modelu HP-12C dodatkowo `n` `i` `f` `g` `p` (PV) `m` (PMT) `v` (FV) `s` (STO) `r` (RCL).
 
-## Aplikacja na Maca
+## Aplikacje pulpitowe (Mac .dmg / Windows .exe)
 
 ```bash
-./macos/build.sh
-open ~/Applications/CASIO\ SL-300.app
+./macos/build.sh          # dist/HP12CFULL.dmg  +  ~/Applications/HP12CFULL.app
+./desktop/build-win.sh    # dist/HP12CFULL-win64.zip  (w środku HP12CFULL.exe + DLL)
 ```
 
-Apka ląduje w `~/Applications/CASIO SL-300.app` (natywne okno WebKit, bez przeglądarki).
+- **Mac:** `dist/HP12CFULL.dmg` — przeciągnij `HP12CFULL.app` do Applications (universal arm64+x86_64). Startuje od HP-12C; menu Model przełącza Casio / TI.
+- **Windows:** rozpakuj `dist/HP12CFULL-win64.zip` i uruchom `HP12CFULL.exe` **z tego folderu** (obok muszą zostać pliki `.dll`). To nie jest pojedynczy instalator NSIS — przenośny pakiet Electron.
+
+```bash
+open dist/HP12CFULL.dmg
+open ~/Applications/HP12CFULL.app
+```

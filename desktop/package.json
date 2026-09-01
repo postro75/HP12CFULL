@@ -1,0 +1,13 @@
+{
+  "name": "hp12cfull",
+  "productName": "HP12CFULL",
+  "version": "1.0.0",
+  "description": "HP-12C / Casio SL-300 / TI-30Xa desktop calculator",
+  "main": "main.js",
+  "author": "postro75",
+  "license": "MIT",
+  "dependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^37.2.1"
+  }
+}

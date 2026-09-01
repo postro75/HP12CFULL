@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     set { UserDefaults.standard.set(newValue, forKey: "casio.font") }
   }
   private var model: String {
-    get { UserDefaults.standard.string(forKey: "casio.model") ?? "casio" }
+    get { UserDefaults.standard.string(forKey: "casio.model") ?? "hp12c" }
     set { UserDefaults.standard.set(newValue, forKey: "casio.model") }
   }
 
@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
       backing: .buffered,
       defer: false
     )
-    window.title = "CASIO SL-300"
+    window.title = "HP12CFULL"
     window.isMovableByWindowBackground = true
     window.backgroundColor = NSColor(calibratedWhite: 0.03, alpha: 1)
     window.collectionBehavior = [.moveToActiveSpace, .fullScreenNone]
@@ -119,9 +119,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     webView?.evaluateJavaScript(js, completionHandler: nil)
     window?.title = [
       "casio": "CASIO SL-300",
-      "hp12c": "HP-12C",
+      "hp12c": "HP12CFULL",
       "ti30xa": "TI-30Xa",
-    ][model] ?? "CASIO SL-300"
+    ][model] ?? "HP12CFULL"
   }
 
   private func applyWindowShape() {
@@ -160,9 +160,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate {
     let appItem = NSMenuItem()
     menubar.addItem(appItem)
     let appMenu = NSMenu()
-    appMenu.addItem(withTitle: "Ukryj CASIO SL-300", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+    appMenu.addItem(withTitle: "Ukryj HP12CFULL", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
     appMenu.addItem(NSMenuItem.separator())
-    appMenu.addItem(withTitle: "Zakończ CASIO SL-300", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+    appMenu.addItem(withTitle: "Zakończ HP12CFULL", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     appItem.submenu = appMenu
 
     let screenItem = NSMenuItem(title: "Ekran", action: nil, keyEquivalent: "")

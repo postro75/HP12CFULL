@@ -5,3 +5,7 @@ __pycache__/
 .project_meta.json
 dist/
 .env*
+desktop/node_modules/
+desktop/www/
+desktop/icon.ico
+desktop/package-lock.json

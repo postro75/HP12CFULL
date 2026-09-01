@@ -1,5 +1,9 @@
 # Stan końcowy HP12CFULL (2026-09-01)
 
+Aplikacje:
+- Mac: `dist/HP12CFULL.dmg` (universal, ~11 MB)
+- Windows: `dist/HP12CFULL-win64.zip` → `HP12CFULL.exe` (~126 MB zip)
+
 Test na żywo: https://hp12cfull.vercel.app/?model=hp12c  
 Repo: https://github.com/postro75/HP12CFULL · `main`
 
