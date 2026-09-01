@@ -123,8 +123,8 @@ class MemoryManager {
      * Clear financial registers (R0-R4)
      */
     clearFinancial() {
+        // Handbook CLEAR FIN: n i PV PMT FV only. Cash flows live in storage regs.
         this.financial = { n: 0, i: 0, pv: 0, pmt: 0, fv: 0 };
-        this.cashFlows = [];
     }
 
     /**
@@ -224,6 +224,7 @@ class MemoryManager {
     reset() {
         this.registers.fill(0);
         this.clearFinancial();
+        this.cashFlows = [];
     }
 
     /**

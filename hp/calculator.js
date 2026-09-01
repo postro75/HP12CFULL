@@ -503,10 +503,12 @@ class Calculator {
 
             case 'digit-4':  // g 4 = D.MY
                 this.dmyMode = true;
+                this.updateDisplay();
                 break;
 
             case 'digit-5':  // g 5 = M.DY
                 this.dmyMode = false;
+                this.updateDisplay();
                 break;
 
             case 'digit-9':  // g 9 = MEM (CF count / remaining program)
@@ -1199,51 +1201,34 @@ class Calculator {
     }
 
     /**
-     * Handle amortization calculation
-     * HP-12C workflow:
-     *   1 [ENTER] 12 [f] [AMORT]  → Interest for periods 1-12
-     *   [x⇄y]                      → Principal paid
-     *   [RCL] [PV]                 → Remaining balance
-     *
-     * Expects: Y register = start period, X register = end period
+     * Handle amortization (Owner's Handbook §3):
+     *   12 [f] [AMORT]  → interest in X
+     *   [x⇄y]           → principal
+     *   [RCL] [PV]      → remaining balance; n accumulates periods amortized
      */
     handleAmortization() {
         this.finishNumberEntry();
-        
+
         try {
-            // Get periods from stack
-            const endPeriod = Math.floor(this.stack.x);    // X = end period
-            const startPeriod = Math.floor(this.stack.y);  // Y = start period
-            
-            // Calculate amortization
+            const periods = Math.floor(Math.abs(this.stack.x));
+            const precision = this.display.decimals;
             const result = this.financial.calculateAmortization(
                 this.memory,
-                startPeriod,
-                endPeriod
+                periods,
+                precision
             );
-            
-            // HP-12C display behavior:
-            // - Display shows interest paid (primary result)
-            // - Principal is in Y register (accessible via x⇄y)
-            // - Balance updates PV register
-            
-            // Store principal in Y register for x⇄y access
+
+            // Stack after AMORT: Z = periods just amortized, Y = principal, X = interest
+            this.stack.t = this.stack.z;
+            this.stack.z = result.periodsJust;
             this.stack.y = result.principalPaid;
-            
-            // Display interest in X register
             this.stack.x = result.interestPaid;
-            
-            // Update PV register with new balance
+
             this.memory.setFinancialRegister('pv', result.balance);
-            
+            this.memory.setFinancialRegister('n', result.n);
+
             this.isNewNumber = true;
             this.currentInput = '';
-            
-            console.log(`AMORT periods ${startPeriod}-${endPeriod}:`);
-            console.log(`  Interest: ${result.interestPaid.toFixed(2)}`);
-            console.log(`  Principal: ${result.principalPaid.toFixed(2)}`);
-            console.log(`  Balance: ${result.balance.toFixed(2)}`);
-            
             this.updateDisplay();
         } catch (error) {
             console.error('Amortization error:', error.message);

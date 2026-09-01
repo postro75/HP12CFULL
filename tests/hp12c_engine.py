@@ -269,12 +269,12 @@ def main():
         case("prefix g sets then clears after n!",
              ["5", "g", "3"],
              lambda s: (s["g"] is False and eq(s["x"], 120), f"g={s['g']} x={s['x']}"))
-        case("AMORT f n on loaded loan: 1 ENTER 12 periods → interest number",
-             ["4", "8", "n", "1", "i", "1", "0", "0", "0", "0", "pv",
-              "2", "6", "3", ",", "3", "4", "+/-", "pmt", "0", "fv",
-              "1", "=", "1", "2", "f", "n"],
-             lambda s: (not str(s["lcd"]).startswith("Error") and abs(float(s["x"])) > 1,
-                        f"x={s['x']} lcd={s['lcd']} pv={s['pv']}"))
+        case("AMORT handbook: 13.25 g 12÷, 50000 PV, −573.35 PMT, 12 f AMORT",
+             ["1", "3", ",", "2", "5", "g", "i", "5", "0", "0", "0", "0", "pv",
+              "5", "7", "3", ",", "3", "5", "+/-", "pmt", "1", "2", "f", "n"],
+             lambda s: (close(s["x"], -6608.89, 0.05) and close(s["y"], -271.31, 0.05)
+                        and close(s["pv"], 49728.69, 0.05) and eq(s["n"], 12),
+                        f"x={s['x']} y={s['y']} pv={s['pv']} n={s['n']}"))
 
         # ── BEGIN / END ──
         case("BEGIN indicator g 7", ["g", "7"],

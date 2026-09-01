@@ -205,12 +205,12 @@ def main():
        ["sto", "eex", "1", ",", "5", "n", "1", "0", "i", "1", "0", "0", "+/-", "pv", "0", "pmt", "fv"],
        lambda s: (close(s["x"], 100 * (1.10 ** 1.5), 0.05), f"x={s['x']} C={s['cflag']}"),
        "HB p.58 compound odd period")
-    fn("AMORT 1 ENTER 12 on 48 n 1 i 10000 PV loan → interest number",
-       ["4", "8", "n", "1", "i", "1", "0", "0", "0", "0", "pv",
-        "2", "6", "3", ",", "3", "4", "+/-", "pmt", "0", "fv",
-        "1", "=", "1", "2", "f", "n"],
-       lambda s: (not str(s["lcd"]).startswith("Error") and abs(float(s["x"])) > 1,
-                  f"x={s['x']} pv={s['pv']}"),
+    fn("AMORT 12 f n handbook: 13.25 g 12÷ 50000 PV −573.35 PMT",
+       ["1", "3", ",", "2", "5", "g", "i", "5", "0", "0", "0", "0", "pv",
+        "5", "7", "3", ",", "3", "5", "+/-", "pmt", "1", "2", "f", "n"],
+       lambda s: (close(s["x"], -6608.89, 0.05) and close(s["pv"], 49728.69, 0.05)
+                  and eq(s["n"], 12),
+                  f"x={s['x']} pv={s['pv']} n={s['n']}"),
        "HB p.61 AMORT")
 
     # ── §4 cash flow / bonds / depr ──
@@ -327,11 +327,10 @@ def main():
        ["1", "g", "AC"],
        lambda s: (True, s["lcd"]),
        "HB p.121 x=0")
-    fn("AMORT x⇄y shows principal (nonzero, opposite interest)",
-       ["4", "8", "n", "1", "i", "1", "0", "0", "0", "0", "pv",
-        "2", "6", "3", ",", "3", "4", "+/-", "pmt", "0", "fv",
-        "1", "=", "1", "2", "f", "n", "xy"],
-       lambda s: (abs(float(s["x"])) > 1 and s["x"] != 0, f"prin={s['x']}"),
+    fn("AMORT x⇄y principal handbook −271.31",
+       ["1", "3", ",", "2", "5", "g", "i", "5", "0", "0", "0", "0", "pv",
+        "5", "7", "3", ",", "3", "5", "+/-", "pmt", "1", "2", "f", "n", "xy"],
+       lambda s: (close(s["x"], -271.31, 0.05), f"prin={s['x']}"),
        "HB p.62 AMORT x⇄y principal")
     fn("ŷ,r linear: (1,2)(2,4) then 3 g 2 → ŷ=6 r=1",
        ["2", "=", "1", "sigma", "4", "=", "2", "sigma", "3", "g", "2"],
@@ -407,6 +406,30 @@ def main():
        ["9", "+/-", "g", "yx"],
        lambda s: (str(s["lcd"]).startswith("Error"), s["lcd"]),
        "HB appendix C Error 0 √")
+    fn("CLEAR FIN keeps cash flows: CF0 survives",
+       ["1", "0", "+/-", "g", "pv", "f", "AC", "rcl", "g", "pv"],
+       lambda s: (eq(s["x"], -10), f"x={s['x']}"),
+       "HB p.36 CLEAR FIN does not wipe CF list")
+    fn("FIX 1 of 1.49 → 1.5",
+       ["1", ",", "4", "9", "f", "1"],
+       lambda s: (s["lcd"] == "1.5", s["lcd"]),
+       "HB p.81 FIX 1")
+    fn("FIX 9 of 1 ENTER 3 ÷",
+       ["1", "=", "3", DIV, "f", "9"],
+       lambda s: (s["lcd"].startswith("0.33333333"), s["lcd"]),
+       "HB p.81 FIX 9")
+    fn("STO.1 / RCL.1 dotted",
+       ["8", "8", "sto", ",", "1", "AC", "rcl", ",", "1"],
+       lambda s: (eq(s["x"], 88), s["lcd"]),
+       "HB p.25 R.1")
+    fn("RCL i after 7 i",
+       ["7", "i", "rcl", "i"],
+       lambda s: (eq(s["x"], 7), s["lcd"]),
+       "HB p.36 RCL i")
+    fn("RCL PV PMT FV",
+       ["1", "pv", "2", "pmt", "3", "fv", "rcl", "pv"],
+       lambda s: (eq(s["x"], 1), s["lcd"]),
+       "HB p.36 RCL PV")
 
     with sync_playwright() as p:
         try:

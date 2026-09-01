@@ -919,6 +919,7 @@
       if (calc && calc.prefixG) bits.push("g");
       if (calc && calc.financial && calc.financial.paymentMode === "BEGIN") bits.push("BEGIN");
       if (calc && calc.financial && calc.financial.compoundOdd) bits.push("C");
+      if (calc && calc.dmyMode) bits.push("D.MY");
       if (calc && calc.prgmMode) bits.push("PRGM");
       indicatorsEl.textContent = bits.join(" ");
     };
