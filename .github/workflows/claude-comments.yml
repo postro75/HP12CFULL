@@ -1,0 +1,158 @@
+name: Claude — wykonaj zadanie
+
+# Automatyzacja Claude Code przez natywne Workload Identity Federation
+# (OIDC GitHub -> token Anthropic). Bez stałych kluczy Anthropic.
+# Opis, limity i konfiguracja: docs/CLAUDE-AUTOMATION.md
+#
+# Wyzwalacze:
+#   * issue_comment [created] — komentarz z @claude w issue lub w rozmowie PR
+#   * workflow_dispatch      — ręczne zadanie (pole `task`), tylko na refs/heads/main
+# Brak pull_request_target i zdarzeń review. Workflow zawsze jest czytany z main.
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Treść zadania dla Claude (wynik: osobna gałąź + PR, bez merge/deploy)"
+        required: true
+        type: string
+      dry_run:
+        description: "Tylko preflight: sprawdź warunki i wymianę WIF + GET /v1/models, bez generacji"
+        required: false
+        default: false
+        type: boolean
+
+# Domyślnie brak uprawnień; joby dostają minimum.
+permissions: {}
+
+concurrency:
+  group: claude-${{ github.event_name }}-${{ github.event.issue.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Preflight (dry-run): te same warunki dostępu + wymiana tokenu, bez wywołania akcji i bez generacji.
+  preflight:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.dry_run == true &&
+      github.actor_id == '52690111' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+      ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+      ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+      ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
+      TASK: ${{ inputs.task }}
+    steps:
+      - name: Check inputs and variables
+        run: |
+          set -euo pipefail
+          if [ -z "${TASK//[[:space:]]/}" ]; then echo "::error::Pole task jest puste"; exit 1; fi
+          echo "task: ${#TASK} znaków (treść nie jest logowana)"
+          for v in ANTHROPIC_FEDERATION_RULE_ID ANTHROPIC_ORGANIZATION_ID ANTHROPIC_SERVICE_ACCOUNT_ID ANTHROPIC_WORKSPACE_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Brak zmiennej $v"; exit 1; fi
+          done
+          echo "Warunki: actor_id=$GITHUB_ACTOR_ID ref=$GITHUB_REF — OK"
+
+      - name: Exchange OIDC token and GET /v1/models (no generation)
+        run: |
+          set -euo pipefail
+          JWT=$(curl -fsS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://api.anthropic.com" | jq -r .value)
+          echo "::add-mask::$JWT"
+          BODY=$(jq -n --arg jwt "$JWT" \
+            --arg rule "$ANTHROPIC_FEDERATION_RULE_ID" --arg org "$ANTHROPIC_ORGANIZATION_ID" \
+            --arg sa "$ANTHROPIC_SERVICE_ACCOUNT_ID" --arg ws "$ANTHROPIC_WORKSPACE_ID" \
+            '{grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer",assertion:$jwt,federation_rule_id:$rule,organization_id:$org,service_account_id:$sa,workspace_id:$ws}')
+          code=$(curl -sS -o exchange.json -w '%{http_code}' https://api.anthropic.com/v1/oauth/token \
+            -H "content-type: application/json" --data "$BODY")
+          echo "Token exchange HTTP: $code"
+          if [ "$code" != "200" ]; then jq -r '.error // .' exchange.json || true; exit 1; fi
+          ACCESS_TOKEN=$(jq -r .access_token exchange.json)
+          echo "::add-mask::$ACCESS_TOKEN"
+          rm -f exchange.json
+          code=$(curl -sS -o models.json -w '%{http_code}' "https://api.anthropic.com/v1/models?limit=1" \
+            -H "authorization: Bearer $ACCESS_TOKEN" -H "anthropic-version: 2023-06-01")
+          echo "GET /v1/models HTTP: $code"
+          [ "$code" = "200" ]
+
+  # Komentarz @claude w issue / rozmowie PR.
+  comment:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.action == 'created' &&
+      github.event.comment.user.id == 52690111 &&
+      github.event.comment.user.type != 'Bot' &&
+      github.event.sender.type != 'Bot' &&
+      github.actor_id == '52690111' &&
+      contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write # wymagane: token OIDC do wymiany WIF
+    steps:
+      # Domyślny checkout = gałąź domyślna (zaufany kod z main). Gałąź PR pobiera
+      # dopiero akcja, po własnej weryfikacji uprawnień zapisu aktora.
+      - name: Checkout repository (default branch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@a5a423f75c251dcbff8a74e99f83b2cb03c72bfa # v1.0.256
+        with:
+          anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          anthropic_workspace_id: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
+          claude_args: |
+            --max-turns 30
+            --max-budget-usd 2
+            --append-system-prompt "Pracuj wyłącznie w osobnej gałęzi i przedstaw zmiany w pull requeście. Nigdy nie scalaj PR, nie wdrażaj na produkcję i nie zmieniaj plików .github/workflows."
+
+  # Ręczne zadanie (workflow_dispatch) — wynik: osobna gałąź / PR, bez merge i deploy.
+  task:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.dry_run != true &&
+      github.actor_id == '52690111' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@a5a423f75c251dcbff8a74e99f83b2cb03c72bfa # v1.0.256
+        with:
+          anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          anthropic_workspace_id: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
+          # Treść zadania trafia do akcji jako wejście (nie do skryptu shell).
+          prompt: ${{ inputs.task }}
+          claude_args: |
+            --max-turns 30
+            --max-budget-usd 2
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*)"
+            --append-system-prompt "Utwórz nową gałąź od main (np. claude/zadanie-<data>), zacommituj zmiany, wypchnij ją i otwórz pull request jako draft. Nigdy nie scalaj PR, nie wdrażaj na produkcję, nie pushuj do main i nie zmieniaj plików .github/workflows."
