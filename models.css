@@ -111,8 +111,7 @@ html[data-model="hp12c"] .calc {
 html[data-model="hp12c"] .face {
   position: relative;
   width: 100%;
-  height: 100%;
-  min-height: 420px;
+  height: auto;
   aspect-ratio: 1464 / 900;
   flex: 1;
   padding: 0;
@@ -166,13 +165,16 @@ html[data-model="hp12c"] .lcd {
 html[data-model="hp12c"] .lcd.error { color: #4a1810; text-shadow: none; }
 html[data-model="hp12c"] .indicators {
   position: absolute;
-  left: 3.2%;
-  top: 6%;
+  left: 3.5%;
+  bottom: 6%;
+  top: auto;
   height: auto;
-  font-size: max(6px, 11cqh);
-  letter-spacing: .14em;
-  color: #1a1e12;
-  opacity: .5;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-weight: 700;
+  font-size: max(7px, 11.5cqh);
+  letter-spacing: .08em;
+  color: #14180d;
+  opacity: .78;
   z-index: 2;
   pointer-events: none;
 }
@@ -209,6 +211,17 @@ html[data-model="hp12c"] .dig .v {
   line-height: 1;
 }
 html[data-model="hp12c"] .dig .g { opacity: 0.07; }
+html[data-model="hp12c"] .dig .p {
+  position: absolute;
+  right: -0.16em;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  line-height: 1;
+}
+html[data-model="hp12c"] .dig.sign {
+  width: 0.55em;
+}
 
 .hp-hotspots {
   display: none;

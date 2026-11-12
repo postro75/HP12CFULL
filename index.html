@@ -289,6 +289,14 @@
       pointer-events: none;
     }
     .dig .v { position: relative; z-index: 1; }
+    .dig .p {
+      position: absolute;
+      right: -0.16em;
+      bottom: 0;
+      z-index: 2;
+      pointer-events: none;
+      line-height: 1;
+    }
 
     /* --- ekran --- */
     html[data-lcd="gray"] .lcd-bezel {
@@ -621,10 +629,11 @@
           <button type="button" class="hs" data-prefix="f" data-key="dlt" aria-label="SOYD" style="left:33.30%;top:48.35%;width:7.20%;height:3.65%;"></button>
           <button type="button" class="hs" data-prefix="f" data-key="%" aria-label="DB" style="left:42.23%;top:48.35%;width:7.20%;height:3.65%;"></button>
           <button type="button" class="hs" data-prefix="f" data-key="rs" aria-label="P/R" style="left:6.50%;top:64.25%;width:7.20%;height:3.65%;"></button>
-          <button type="button" class="hs" data-prefix="f" data-key="sst" aria-label="CLEAR PREFIX" style="left:15.43%;top:64.25%;width:7.20%;height:3.65%;"></button>
-          <button type="button" class="hs" data-prefix="f" data-key="rdn" aria-label="CLEAR REG" style="left:24.37%;top:64.25%;width:7.20%;height:3.65%;"></button>
-          <button type="button" class="hs" data-prefix="f" data-key="xy" aria-label="PSE" style="left:33.30%;top:64.25%;width:7.20%;height:3.65%;"></button>
-          <button type="button" class="hs" data-prefix="f" data-key="AC" aria-label="CLEAR FIN" style="left:42.23%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="sst" aria-label="CLEAR SIGMA" style="left:15.43%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="rdn" aria-label="CLEAR PRGM" style="left:24.37%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="xy" aria-label="CLEAR FIN" style="left:33.30%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="AC" aria-label="CLEAR REG" style="left:42.23%;top:64.25%;width:7.20%;height:3.65%;"></button>
+          <button type="button" class="hs" data-prefix="f" data-key="=" aria-label="CLEAR PREFIX" style="left:51.17%;top:64.25%;width:7.20%;height:3.65%;"></button>
           <button type="button" class="hs" data-prefix="f" data-key="sigma" aria-label="CLEAR SIGMA" style="left:77.97%;top:80.80%;width:7.20%;height:3.00%;"></button>
           <button type="button" class="hs" data-prefix="f" data-key="," aria-label="SCI" style="left:69.03%;top:80.80%;width:7.20%;height:3.00%;"></button>
           <button type="button" class="hs" data-key="n" aria-label="n" style="left:6.50%;top:36.15%;width:7.20%;height:12.05%;"></button>
@@ -853,6 +862,22 @@
       return model === "casio" ? 8 : 10;
     }
 
+    function tokenizeSlots(shown) {
+      const str = String(shown || "");
+      const out = [];
+      for (let i = 0; i < str.length; i++) {
+        const c = str[i];
+        if ((c === "." || c === ",") && out.length > 0 && !out[out.length - 1].p) {
+          out[out.length - 1].p = ".";
+        } else if (c === "." || c === ",") {
+          out.push({ ch: "0", p: "." });
+        } else {
+          out.push({ ch: c === " " ? "" : c, p: "" });
+        }
+      }
+      return out;
+    }
+
     function paintSlots(shown) {
       const field = document.getElementById("digit-field");
       const stack = document.querySelector(".value-stack");
@@ -864,13 +889,21 @@
       displayEl.classList.toggle("lcd-hidden", useSlots);
       if (!useSlots || !field) return;
       const n = ghostSlots();
-      let chars = shown;
-      if (chars.length > n) chars = chars.slice(-n);
-      const lead = n - chars.length;
-      let html = "";
+      let tokens = tokenizeSlots(shown);
+      let extraSign = false;
+      if (tokens.length === n + 1 && tokens[0].ch === "-") {
+        extraSign = true;
+        tokens = tokens.slice(1);
+      } else if (tokens.length > n) {
+        tokens = tokens.slice(-n);
+      }
+      const lead = n - tokens.length;
+      let html = extraSign ? `<span class="dig sign"><span class="v">-</span></span>` : "";
       for (let i = 0; i < n; i++) {
-        const ch = i < lead ? "" : chars[i - lead];
-        html += `<span class="dig"><span class="g">8</span><span class="v">${ch || ""}</span></span>`;
+        const tok = i < lead ? null : tokens[i - lead];
+        const ch = tok ? tok.ch : "";
+        const p = tok && tok.p ? `<span class="p">${tok.p}</span>` : "";
+        html += `<span class="dig"><span class="g">8</span><span class="v">${ch}</span>${p}</span>`;
       }
       field.innerHTML = html;
     }
@@ -889,7 +922,11 @@
       const root = document.documentElement;
       if (lcd) root.setAttribute("data-lcd", lcd);
       if (font) root.setAttribute("data-font", font);
-      render();
+      if (root.getAttribute("data-model") === "hp12c" && typeof window.hpInit === "function") {
+        window.hpInit();
+      } else {
+        render();
+      }
     }
 
     function clickSound() {
@@ -912,7 +949,7 @@
       const text = String(raw);
       const isErr = /^Error/i.test(text);
       displayEl.textContent = text;
-      paintSlots(text.replace(/,/g, "").replace(/\s/g, ""));
+      paintSlots(text);
       lcdEl.classList.toggle("error", isErr);
       const bits = [];
       if (calc && calc.prefixF) bits.push("f");
@@ -1045,8 +1082,11 @@
       if (hint) hint.textContent = HINTS[model] || HINTS.casio;
       document.title = TITLES[model] || TITLES.casio;
       syncModelUrl(model);
-      if (model === "hp12c" && typeof window.hpInit === "function") window.hpInit();
-      render();
+      if (model === "hp12c" && typeof window.hpInit === "function") {
+        window.hpInit();
+      } else {
+        render();
+      }
     }
 
     document.querySelectorAll(".models [data-model]").forEach((btn) => {
